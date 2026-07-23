@@ -13,7 +13,7 @@
 | Economy (soft-lock structure) | ✅ validated — no retune needed for itch |
 | AU powers (Infusion / Surge / Amplify / Cleanse) | ✅ |
 | #43 Rank mastery (+10% / +20%) | ✅ |
-| ATHANOR cheat | ⚠ gate before itch demo |
+| ATHANOR cheat | ✅ hidden easter egg (no in-game hints) |
 
 **Cut (Arcane direction):** Freeplay, Unending, Tier II bases, Mirror Nodes.
 
@@ -21,8 +21,8 @@
 
 ## ITCH.IO DEMO LAUNCH
 
-- [ ] Gate **ATHANOR** debug cheat in public builds
-- [ ] Version label on title screen (`Demo v0.13.x`)
+- [x] Version label on title screen (`Demo v0.1.a`)
+- [x] ATHANOR cheat — ship as undiscoverable easter egg (no in-game hints)
 - [ ] Page label: Demo / Early Access / WIP
 - [ ] 5–8 screenshots + short cycle GIF
 - [ ] Store blurb + controls (mouse, pan/zoom, click, drag placement)

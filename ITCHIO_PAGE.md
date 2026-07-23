@@ -6,25 +6,29 @@ Copy fields into the itch.io project form. Replace media placeholders with real 
 
 ## Project settings
 
-| Field | Value |
-|---|---|
-| **Title** | Athanor Cycles |
-| **URL** | `athanor-cycles` (or your handle) |
-| **Classification** | Games |
-| **Kind of project** | HTML |
-| **Release status** | In development |
-| **Pricing** | Pay what you want |
-| **Tags** | roguelite, incremental, idle, alchemy, strategy, deckbuilding, browser, singleplayer, early-access |
-| **Genre** | Strategy / Simulation |
-| **Inputs** | Keyboard + Mouse |
-| **Platforms** | HTML5 |
-| **Embed** | ✓ This file will be played in the browser |
-| **Orientation** | Landscape (desktop-first) |
-| **Visibility** | Start as Draft until screenshots/GIF land; then Public |
+
+| Field               | Value                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| **Title**           | Athanor Cycles                                                                                     |
+| **URL**             | `athanor-cycles` (or your handle)                                                                  |
+| **Classification**  | Games                                                                                              |
+| **Kind of project** | HTML                                                                                               |
+| **Release status**  | In development                                                                                     |
+| **Pricing**         | Pay what you want                                                                                  |
+| **Tags**            | roguelite, incremental, idle, alchemy, strategy, deckbuilding, browser, singleplayer, early-access |
+| **Genre**           | Strategy / Simulation                                                                              |
+| **Inputs**          | Keyboard + Mouse                                                                                   |
+| **Platforms**       | HTML5                                                                                              |
+| **Embed**           | ✓ This file will be played in the browser                                                          |
+| **Orientation**     | Landscape (desktop-first)                                                                          |
+| **Visibility**      | Start as Draft until screenshots/GIF land; then Public                                             |
+
 
 **Cover image:** 630×500 (or itch’s current cover ratio) — title screen / gold Cinzel wordmark on dark alchemical UI.
 
 ---
+
+
 
 ## Short description (≤140 chars)
 
@@ -34,6 +38,8 @@ A magical academic roguelite. Place elemental nodes, survive Arcane pulses, grad
 
 ---
 
+
+
 ## More information (sidebar blurb)
 
 ```
@@ -41,6 +47,8 @@ Browser HTML5 demo of a magical-academia roguelite incremental. Place nodes, sur
 ```
 
 ---
+
+
 
 ## Description (HTML body)
 
@@ -131,34 +139,43 @@ Paste into the Description field:
 
 ---
 
+
+
 ## Screenshot / GIF shot list
 
-| # | Asset | Capture |
-|---|---|---|
-| **GIF 01** | Hero loop (~8–15s) | Mid-run: gen → pulse → bar reaction (best first media) |
-| **02** | Run board | Full UI, several nodes lit |
-| **03** | Hub | Prep or Record |
-| **04** | Forge | Combined/tri node visible |
-| **05** | Lesson / Graduation | Offer or sealed reward pick |
-| **06** | Pressure | Low Arcane, disturbance, or Evocation spike |
-| **07** | Board planner | Pre-run layout |
-| **08** | Optional | Glossary or Elemental Adjacency tray |
+
+| #          | Asset               | Capture                                                |
+| ---------- | ------------------- | ------------------------------------------------------ |
+| **GIF 01** | Hero loop (~8–15s)  | Mid-run: gen → pulse → bar reaction (best first media) |
+| **02**     | Run board           | Full UI, several nodes lit                             |
+| **03**     | Hub                 | Prep or Record                                         |
+| **04**     | Forge               | Combined/tri node visible                              |
+| **05**     | Lesson / Graduation | Offer or sealed reward pick                            |
+| **06**     | Pressure            | Low Arcane, disturbance, or Evocation spike            |
+| **07**     | Board planner       | Pre-run layout                                         |
+| **08**     | Optional            | Glossary or Elemental Adjacency tray                   |
+
 
 Aim for **16:9**, UI readable at gallery size, no debug overlays.
 
 ---
 
+
+
 ## Upload package
 
 1. Zip `athanor_cycles_va1.html` (optionally rename to `index.html` for cleaner embed).
 2. Kind: **HTML** · “This file will be played in the browser”.
-3. Before public: gate **ATHANOR** cheat · add title version (`Demo v0.13.x` or similar).
+3. Before public: add title version (`Demo v0.1.a`). ATHANOR cheat ships hidden (no in-game hint).
 
 ---
 
+
+
 ## Pre-launch checklist
 
-- [ ] Gate ATHANOR debug cheat in public build
+- [x] Title version label (`Demo v0.1.a`)
+- [x] ATHANOR cheat — intentional hidden easter egg (not documented on page)
 - [ ] Version label on title screen
 - [ ] Cover image
 - [ ] GIF 01 + screenshots 02–07 (08 optional)
