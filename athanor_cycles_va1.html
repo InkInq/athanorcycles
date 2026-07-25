@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Athanor Cycles</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
@@ -26,11 +28,15 @@
 .el-ar{color:var(--ar-mid);}
 .el-au{color:var(--gold-soft);}
 *{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;height:100dvh;}
 body{
   background:var(--bg);
   color:var(--text);
   font-family:'Crimson Text',serif;
-  height:100vh;overflow:hidden;display:flex;flex-direction:column;
+  height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .35s;}
 .screen.active{opacity:1;pointer-events:all;}
@@ -543,6 +549,155 @@ body{
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ═══════════════════════════════════════════
+   MOBILE / TOUCH LAYOUT
+   ═══════════════════════════════════════════ */
+#rpanel-toggle,#rpanel-backdrop{display:none;}
+#board-canvas{touch-action:none;}
+#hub-board-canvas{touch-action:none;}
+
+@media (max-width:960px){
+  .t-main{font-size:32px;letter-spacing:5px;}
+  .t-sub{font-size:15px;}
+  .furnace{font-size:64px;}
+  .t-div{width:min(280px,80vw);margin:18px 0;}
+  #title-slots{flex-wrap:wrap;justify-content:center;}
+  .save-slot{width:min(180px,42vw);}
+
+  .hub-top{flex-wrap:wrap;padding:8px 12px;gap:8px;}
+  .hub-title{font-size:16px;letter-spacing:2px;}
+  .hub-title span{display:none;}
+  .hub-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .hub-tabs::-webkit-scrollbar{display:none;}
+  .hub-tab{padding:8px 12px;font-size:13px;letter-spacing:1px;white-space:nowrap;flex-shrink:0;}
+  .hub-begin{padding:7px 12px;font-size:14px;}
+  #s-hub{min-height:0;}
+  #hub-body{flex-direction:column!important;flex:1;min-height:0;overflow:hidden;}
+  #hub-pages{min-height:0;flex:1 1 auto;overflow:hidden;display:flex;flex-direction:column;}
+  .hub-page.active{flex:1;min-height:0;overflow:hidden;display:flex!important;flex-direction:column;}
+  #board-dock{
+    width:100%!important;max-height:50vh;border-left:none!important;border-top:1px solid var(--border);
+    order:2;flex-shrink:0;overflow-y:auto!important;-webkit-overflow-scrolling:touch;
+  }
+  #board-dock > .board-dock-canvas-wrap{
+    flex:0 0 auto!important;height:180px;min-height:180px;max-height:180px;
+  }
+  #board-dock-collapsed{
+    width:100%!important;height:36px!important;flex-direction:row!important;border-left:none!important;
+    border-top:1px solid var(--border);padding:0 12px!important;gap:10px!important;order:2;
+  }
+  #board-dock-collapsed span[style*="writing-mode"]{writing-mode:horizontal-tb!important;letter-spacing:2px!important;}
+  .hub-left,.hub-prep-discovered,#forge-discovery-list,#forge-arcanum-rows,#glossary-list{
+    width:100%!important;max-width:none!important;border-right:none!important;border-left:none!important;
+    border-bottom:1px solid var(--border);flex:0 0 auto!important;overflow:visible!important;
+  }
+  #hub-page-record>div,#hub-page-prep>.hub-right,.hub-forge-page,#hub-page-glossary>div{
+    flex:1;min-height:0;flex-direction:column!important;
+    overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;
+  }
+  #hub-page-prep>.hub-right{overflow:hidden auto!important;}
+  #hub-page-prep>.hub-right>div{flex:0 0 auto!important;width:100%!important;border-right:none!important;overflow:visible!important;}
+  #glossary-list{max-height:none!important;padding-bottom:4px;}
+  #glossary-detail{flex:0 0 auto!important;min-height:0!important;overflow:visible!important;padding:14px 16px 28px!important;}
+  .hub-cols{flex-direction:column;}
+  #forge-arcanum-center{padding:12px!important;flex:0 0 auto!important;overflow:visible!important;}
+  #forge-discovery-list,#forge-arcanum-rows{overflow:visible!important;max-height:none!important;}
+  .hub-page .hub-section{padding-bottom:4px;}
+
+  .logo{font-size:15px;letter-spacing:2px;}
+  .logo span{display:none;}
+  .topbar{padding:4px 10px;min-height:48px;gap:8px;}
+  .p-t{font-size:17px;}
+  .p-hd{font-size:11px;}
+  .p-sv{font-size:11px;}
+  .tst-l{font-size:11px;}
+  .tst-v{font-size:15px;}
+  .top-r{gap:8px;}
+  .gw{width:72px;}
+
+  /* Mobile Arcane strip — above generation/stability in the bottom chrome */
+  #mobile-arc-strip{
+    display:flex!important;align-items:center;gap:8px;flex-shrink:0;width:100%;
+    padding:7px 10px 5px;box-sizing:border-box;
+    background:linear-gradient(180deg,#0e0e1e,#0a0a16);
+    border-top:1px solid var(--border-gold);
+  }
+  #mobile-arc-strip .arc-big{font-size:17px;color:var(--ar-mid);text-shadow:0 0 10px rgba(136,72,184,.45);}
+  #mobile-arc-strip .arc-mx{font-size:12px;}
+  #mobile-arc-strip .arc-pb{flex:1;margin-top:0;height:9px;min-width:0;}
+  #mobile-arc-strip .mobile-arc-meta{font-size:11px;color:var(--text-dim);font-family:'Cinzel',serif;white-space:nowrap;flex-shrink:0;}
+  #mobile-arc-strip .arc-ov-line{font-size:11px;}
+  #mobile-arc-strip .arc-ov-line.show{display:inline;}
+  #run-bottom{display:flex;flex-direction:column;flex-shrink:0;}
+  #rpanel-arc-section .arc-readout,
+  #rpanel-arc-section .arc-pb,
+  #rpanel-arc-section .arc-st{display:none;}
+  #rpanel-arc-section .rp-t{font-size:14px;}
+
+  .run-main{position:relative;min-height:0;}
+  .rpanel{
+    position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw)!important;z-index:120;
+    transform:translateX(105%);transition:transform .25s ease;box-shadow:-8px 0 28px rgba(0,0,0,.55);
+    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  }
+  .rpanel.open{transform:translateX(0);}
+  #rpanel-toggle{
+    display:flex;align-items:center;justify-content:center;
+    position:absolute;top:10px;right:10px;z-index:55;
+    width:42px;height:42px;border-radius:8px;cursor:pointer;
+    background:rgba(12,10,20,.9);border:1px solid var(--gold-dim);color:var(--gold);
+    font-family:'Cinzel',serif;font-size:18px;box-shadow:0 2px 12px rgba(0,0,0,.45);
+    -webkit-user-select:none;user-select:none;
+  }
+  #rpanel-close{display:inline-block!important;}
+  #rpanel-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:115;
+  }
+  #rpanel-backdrop.show{display:block;}
+  #lesson-list{right:56px;max-width:120px;}
+  #lesson-panel{top:auto;bottom:86px;transform:none;}
+  #effect-list{bottom:80px;max-width:120px;}
+  .bbar{
+    height:auto;min-height:56px;flex-wrap:wrap;padding:6px 8px;gap:4px;
+    padding-bottom:max(6px,env(safe-area-inset-bottom));
+  }
+  .bb{min-width:52px;padding:3px 6px;}
+  .bb-n{font-size:11px;}
+  .bb-s{font-size:9px;}
+  .prog-b{min-width:120px;flex:1 1 140px;}
+  .cyc-p{padding-right:6px;}
+  .inv-strip{height:78px;padding-bottom:env(safe-area-inset-bottom);}
+  .place-prompt{font-size:12px;letter-spacing:1px;padding:7px 12px;max-width:94%;text-align:center;line-height:1.35;}
+  .place-prompt .desktop-only{display:none;}
+  .place-prompt .mobile-only{display:inline;}
+  .ovc{width:min(118px,28vw);}
+  #card-ov .ov-cards{flex-wrap:wrap;justify-content:center;}
+  .pause-box{min-width:0;width:min(320px,92vw);max-height:90vh;overflow-y:auto;}
+  .bbar{border-top:none;}
+  .bbar::before{display:none;}
+}
+#mobile-arc-strip{display:none;}
+#run-bottom{display:contents;}
+
+@media (max-width:960px){
+  .place-prompt .mobile-only{display:inline;}
+  #run-bottom{display:flex;}
+}
+.place-prompt .mobile-only{display:none;}
+
+@media (max-width:700px) and (orientation:portrait){
+  .t-main{font-size:26px;letter-spacing:3px;}
+  #title-menu{width:100%;}
+  #title-menu .t-cta,#title-continue-btn{width:100%!important;max-width:280px;}
+  .hub-top-actions{width:100%;justify-content:flex-end;flex-wrap:wrap;}
+  #crucible-toggle{font-size:13px!important;padding:4px 8px!important;}
+  .p-blk .p-sv{display:none;}
+  .top-r .tst:nth-child(3){display:none;} /* hide AU in topbar — still in grimoire drawer */
+  .bbar .sp{display:none;}
+  .bb[onclick="pauseRun()"] .bb-s,
+  .bb[onclick="endRun(false)"] .bb-s{display:none;}
+}
 </style>
 </head>
 <body>
@@ -837,10 +992,10 @@ body{
           <div class="hub-sec-title rec-toggle" onclick="toggleBoardDock()" style="margin-bottom:2px;border-bottom:none;padding-bottom:0;">
             <span class="sec-caret" id="board-dock-caret">▾</span>Board Planner
           </div>
-          <div id="hub-board-sub" style="font-size:15px;color:var(--text-dim);font-family:'Cinzel',serif;padding-left:14px;">Drag nodes onto board · Double-click to remove</div>
+          <div id="hub-board-sub" style="font-size:15px;color:var(--text-dim);font-family:'Cinzel',serif;padding-left:14px;">Drag nodes onto board · Double-click / long-press to remove</div>
         </div>
         <!-- Board canvas -->
-        <div style="flex:1;position:relative;min-height:160px;background:radial-gradient(ellipse at 50% 45%,#0d0d20 0%,#060610 75%);">
+        <div class="board-dock-canvas-wrap" style="flex:1;position:relative;min-height:160px;background:radial-gradient(ellipse at 50% 45%,#0d0d20 0%,#060610 75%);">
           <canvas id="hub-board-canvas" style="position:absolute;inset:0;width:100%;height:100%;"></canvas>
         </div>
         <!-- Node inventory strip -->
@@ -939,7 +1094,8 @@ body{
         <div class="nt-state" id="nt-state"></div>
         <div class="nt-cards" id="nt-cards"></div>
       </div>
-      <div class="place-prompt" id="place-prompt">DRAG TO PLACE · DRAG TO REPOSITION · DOUBLE-CLICK TO RETURN TO INVENTORY · ENTER TO CONFIRM<span id="place-prompt-x" onclick="dismissPlacePrompt()" style="margin-left:12px;cursor:pointer;pointer-events:auto;color:var(--text-dim);font-weight:bold;">✕</span></div>
+      <div class="place-prompt" id="place-prompt"><span class="desktop-only">DRAG TO PLACE · DRAG TO REPOSITION · DOUBLE-CLICK TO RETURN · ENTER TO CONFIRM</span><span class="mobile-only">DRAG TO PLACE · LONG-PRESS TO RETURN · DONE WHEN READY</span><span id="place-prompt-x" onclick="dismissPlacePrompt()" style="margin-left:12px;cursor:pointer;pointer-events:auto;color:var(--text-dim);font-weight:bold;">✕</span></div>
+      <button type="button" id="rpanel-toggle" onclick="toggleRpanel()" title="Grimoire" aria-label="Open Grimoire panel">⬡</button>
       <div class="inv-strip" id="inv-strip">
         <div class="inv-label">Inventory</div>
         <div class="inv-nodes" id="inv-nodes"></div>
@@ -948,9 +1104,12 @@ body{
       </div>
     </div>
 
-    <div class="rpanel">
-      <div class="rp-s">
-        <div class="rp-t">⬡ Arcane</div>
+    <div class="rpanel" id="rpanel">
+      <div class="rp-s" id="rpanel-arc-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;">
+          <div class="rp-t" style="margin-bottom:0;padding-bottom:0;border-bottom:none;">⬡ Arcane</div>
+          <button type="button" id="rpanel-close" onclick="closeRpanel()" style="display:none;background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:4px;padding:4px 10px;font-family:'Cinzel',serif;font-size:14px;cursor:pointer;">CLOSE</button>
+        </div>
         <div class="arc-readout">
           <div class="arc-main-line"><span class="arc-big" id="av">500</span><span class="arc-mx" id="am"> / 500</span></div>
           <div class="arc-ov-line" id="ov-disp-wrap"><span class="arc-ov-val" id="ov-disp-val">+0</span><span class="arc-ov-lbl"> overflow</span></div>
@@ -1000,21 +1159,36 @@ body{
   </div>
 
 
-  <div class="bbar">
-    <div class="cyc-p"><div class="cp-l">CYCLE</div><div class="cp-v" id="cv">1</div></div>
-    <div class="prog-b">
-      <div class="pb-r"><div class="pb-l" id="gl">Generation: 0 / 800</div><div class="pb-t"><div class="pb-f pb-gen" id="gbar" style="width:0%"></div></div></div>
-      <div class="pb-r"><div class="pb-l" id="sl">Stability: generate more first</div><div class="pb-t"><div class="pb-f pb-stb" id="sbar" style="width:0%"></div></div></div>
+  <div id="run-bottom">
+    <div id="mobile-arc-strip" aria-label="Arcane">
+      <div style="display:flex;flex-direction:column;gap:0;flex-shrink:0;min-width:64px;">
+        <div class="arc-main-line"><span class="arc-big" id="m-av">500</span><span class="arc-mx" id="m-am"> / 500</span></div>
+        <div class="arc-ov-line" id="m-ov-disp-wrap"><span class="arc-ov-val" id="m-ov-disp-val">+0</span><span class="arc-ov-lbl"> ov</span></div>
+      </div>
+      <div class="arc-pb" id="m-arc-pb">
+        <div class="arc-pf" id="m-apf" style="width:50%;border-radius:4px;"></div>
+        <div class="arc-ovf" id="m-ovf"></div>
+        <div id="m-stab-floor-tick" style="position:absolute;top:-2px;bottom:-2px;width:2px;left:28%;background:rgba(136,200,255,0.7);border-radius:1px;pointer-events:none;"></div>
+      </div>
+      <div class="mobile-arc-meta">Dr <span id="m-dr">—</span> · Mit <span id="m-am2">—</span></div>
     </div>
-    <button class="bb inf" onclick="consume('inf')" onmouseenter="showAuTip(this,'Infusion','Immediately restores 200 Arcane. Defensive — use when Arcane is critically low. Cost: 5 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">INFUSION</div><div class="bb-s">+200 Arc</div><div class="bb-s">5 AU</div></button>
-    <button class="bb sge" id="btn-sge" onclick="consume('sge')" onmouseenter="showAuTip(this,'Surge','Accelerates all node speeds by ×1.4 for 8 seconds. Speeds up Terra accumulation, Ventus crit cycles, and Aqua passive gen. Cost: 3 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">SURGE</div><div class="bb-s">Speed×1.4</div><div class="bb-s">3 AU</div></button>
-    <button class="bb amp" id="btn-amp" onclick="consume('amp')" onmouseenter="showAuTip(this,'Amplify','Boosts all Arcane output by ×1.5 for 8 seconds. Multiplies click yields, passive gen, and card bonuses. Stacks with other multipliers. Cost: 3 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">AMPLIFY</div><div class="bb-s">Out×1.5</div><div class="bb-s">3 AU</div></button>
-    <button class="bb" id="btn-cln" onclick="consume('cln')" onmouseenter="showAuTip(this,'Cleanse','Removes one random active Disturbance. High cost — save for severe stacks. Cost: 25 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">CLEANSE</div><div class="bb-s">−1 Disturb</div><div class="bb-s">25 AU</div></button>
-    <div class="sp"></div>
-    <button class="bb" onclick="pauseRun()"><div class="bb-n">PAUSE</div><div class="bb-s">[P]</div></button>
-    <button class="bb" onclick="endRun(false)" style="border-color:var(--gold-soft)"><div class="bb-n">END RUN</div><div class="bb-s">[R]</div></button>
+    <div class="bbar">
+      <div class="cyc-p"><div class="cp-l">CYCLE</div><div class="cp-v" id="cv">1</div></div>
+      <div class="prog-b">
+        <div class="pb-r"><div class="pb-l" id="gl">Generation: 0 / 800</div><div class="pb-t"><div class="pb-f pb-gen" id="gbar" style="width:0%"></div></div></div>
+        <div class="pb-r"><div class="pb-l" id="sl">Stability: generate more first</div><div class="pb-t"><div class="pb-f pb-stb" id="sbar" style="width:0%"></div></div></div>
+      </div>
+      <button class="bb inf" onclick="consume('inf')" onmouseenter="showAuTip(this,'Infusion','Immediately restores 200 Arcane. Defensive — use when Arcane is critically low. Cost: 5 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">INFUSION</div><div class="bb-s">+200 Arc</div><div class="bb-s">5 AU</div></button>
+      <button class="bb sge" id="btn-sge" onclick="consume('sge')" onmouseenter="showAuTip(this,'Surge','Accelerates all node speeds by ×1.4 for 8 seconds. Speeds up Terra accumulation, Ventus crit cycles, and Aqua passive gen. Cost: 3 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">SURGE</div><div class="bb-s">Speed×1.4</div><div class="bb-s">3 AU</div></button>
+      <button class="bb amp" id="btn-amp" onclick="consume('amp')" onmouseenter="showAuTip(this,'Amplify','Boosts all Arcane output by ×1.5 for 8 seconds. Multiplies click yields, passive gen, and card bonuses. Stacks with other multipliers. Cost: 3 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">AMPLIFY</div><div class="bb-s">Out×1.5</div><div class="bb-s">3 AU</div></button>
+      <button class="bb" id="btn-cln" onclick="consume('cln')" onmouseenter="showAuTip(this,'Cleanse','Removes one random active Disturbance. High cost — save for severe stacks. Cost: 25 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">CLEANSE</div><div class="bb-s">−1 Disturb</div><div class="bb-s">25 AU</div></button>
+      <div class="sp"></div>
+      <button class="bb" onclick="pauseRun()"><div class="bb-n">PAUSE</div><div class="bb-s">[P]</div></button>
+      <button class="bb" onclick="endRun(false)" style="border-color:var(--gold-soft)"><div class="bb-n">END RUN</div><div class="bb-s">[R]</div></button>
+    </div>
   </div>
 </div><!-- /s-run -->
+<div id="rpanel-backdrop" onclick="closeRpanel()"></div>
 
 <!-- LESSON OFFER MODAL -->
 <div id="lesson-ov">
@@ -1167,6 +1341,10 @@ body{
       <div style="font-family:'Cinzel',serif;font-size:15px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;">Settings</div>
       <div style="display:flex;flex-direction:column;gap:9px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Tooltips</div>
+          <input type="checkbox" id="tooltips-toggle" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setTooltipsEnabled(this.checked)">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;" id="tt-opacity-row">
           <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Tooltip Opacity</div>
           <div style="display:flex;align-items:center;gap:7px;">
             <input type="range" id="tt-opacity-slider" min="0" max="100" value="100" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setTooltipOpacity(this.value)">
@@ -1919,6 +2097,30 @@ let boardCanvas,boardCtx,boardW,boardCX,boardCY;
 const CELL=72;
 const view={x:0,y:0,zoom:1.5,minZoom:0.35,maxZoom:2.2,dragging:false,startX:0,startY:0,startPanX:0,startPanY:0};
 function getBoardRange(){return META.boardRange||1;}
+function isMobileLayout(){return window.matchMedia('(max-width:960px)').matches;}
+function toggleRpanel(){
+  const p=document.getElementById('rpanel'),b=document.getElementById('rpanel-backdrop');
+  if(!p)return;
+  const open=!p.classList.contains('open');
+  p.classList.toggle('open',open);
+  if(b)b.classList.toggle('show',open);
+}
+function closeRpanel(){
+  const p=document.getElementById('rpanel'),b=document.getElementById('rpanel-backdrop');
+  if(p)p.classList.remove('open');
+  if(b)b.classList.remove('show');
+}
+function resizeBoardCanvas(){
+  if(!boardCanvas)return;
+  const wrap=document.getElementById('board-wrap');if(!wrap)return;
+  boardW=wrap.clientWidth;
+  const h=wrap.clientHeight;
+  if(boardCanvas.width!==boardW||boardCanvas.height!==h){
+    boardCanvas.width=boardW;boardCanvas.height=h;
+    boardCX=boardW/2;boardCY=h/2;
+    drawBoard();
+  }
+}
 function initBoard(){
   boardCanvas=document.getElementById('board-canvas');
   const wrap=document.getElementById('board-wrap');
@@ -1926,8 +2128,9 @@ function initBoard(){
   boardCanvas.width=boardW;boardCanvas.height=wrap.clientHeight;
   boardCtx=boardCanvas.getContext('2d');
   boardCX=boardW/2;boardCY=wrap.clientHeight/2;
-  view.x=0;view.y=0;view.zoom=1.5;
-  setupBoardPan();setupBoardTooltip();
+  view.x=0;view.y=0;view.zoom=isMobileLayout()?1.15:1.5;
+  setupBoardPan();setupBoardTooltip();setupBoardTouch();
+  closeRpanel();
 }
 function gridToPixel(q,r){
   const cz=CELL*view.zoom;
@@ -1975,6 +2178,135 @@ function setupBoardPan(){
     const scale=newZoom/view.zoom;
     view.x=mx-scale*(mx-view.x);view.y=my-scale*(my-view.y);view.zoom=newZoom;drawBoard();
   },{passive:false});
+}
+
+// ═══════════════════════════════════════════
+// BOARD TOUCH (pan / pinch / tap / long-press)
+// ═══════════════════════════════════════════
+const touchBoard={
+  mode:null, // pan | pinch | pending
+  startX:0,startY:0,startPanX:0,startPanY:0,
+  moved:false,node:null,pinchDist:0,pinchZoom:1,
+  longTimer:null,suppressClick:false,
+};
+function touchDist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);}
+function touchMid(a,b){return{x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};}
+function clearTouchLong(){if(touchBoard.longTimer){clearTimeout(touchBoard.longTimer);touchBoard.longTimer=null;}}
+function returnNodeToInventory(node){
+  if(!R||!R.placing||!node||node.immovable||!NODE_DEFS[node.el])return;
+  R.placedNodes=R.placedNodes.filter(n=>n!==node);
+  R.inventory.push(node);
+  log(`${NODE_DEFS[node.el].name} returned to inventory.`,'n');
+  updInventoryUI();drawBoard();
+}
+function setupBoardTouch(){
+  if(!boardCanvas||boardCanvas._touchSetup)return;
+  boardCanvas._touchSetup=true;
+  boardCanvas.addEventListener('touchstart',e=>{
+    if(!R||R.dead)return;
+    if(e.touches.length===2){
+      e.preventDefault();
+      clearTouchLong();
+      touchBoard.mode='pinch';
+      touchBoard.pinchDist=touchDist(e.touches[0],e.touches[1]);
+      touchBoard.pinchZoom=view.zoom;
+      view.dragging=false;
+      return;
+    }
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    const rect=boardCanvas.getBoundingClientRect();
+    const node=getNodeAtPixel(t.clientX-rect.left,t.clientY-rect.top);
+    touchBoard.startX=t.clientX;touchBoard.startY=t.clientY;
+    touchBoard.startPanX=view.x;touchBoard.startPanY=view.y;
+    touchBoard.moved=false;touchBoard.node=node;touchBoard.suppressClick=false;
+    clearTouchLong();
+    if(R.placing&&node&&!node.immovable&&NODE_DEFS[node.el]){
+      // Placement long-press returns to inventory; otherwise start board drag after small move
+      touchBoard.mode='pending';
+      touchBoard.longTimer=setTimeout(()=>{
+        if(touchBoard.mode==='pending'&&!touchBoard.moved&&touchBoard.node){
+          returnNodeToInventory(touchBoard.node);
+          touchBoard.mode=null;touchBoard.suppressClick=true;
+        }
+      },480);
+      return;
+    }
+    if(node&&!R.placing){
+      touchBoard.mode='pending'; // tap to activate on touchend
+      return;
+    }
+    // Empty space — pan
+    e.preventDefault();
+    touchBoard.mode='pan';
+    view.dragging=true;
+  },{passive:false});
+  boardCanvas.addEventListener('touchmove',e=>{
+    if(!R||R.dead)return;
+    if(touchBoard.mode==='pinch'&&e.touches.length===2){
+      e.preventDefault();
+      const dist=touchDist(e.touches[0],e.touches[1]);
+      if(touchBoard.pinchDist<=0)return;
+      const ratio=dist/touchBoard.pinchDist;
+      const newZoom=Math.max(view.minZoom,Math.min(view.maxZoom,touchBoard.pinchZoom*ratio));
+      const rect=boardCanvas.getBoundingClientRect();
+      const mid=touchMid(e.touches[0],e.touches[1]);
+      const mx=mid.x-rect.left,my=mid.y-rect.top;
+      const scale=newZoom/view.zoom;
+      view.x=mx-scale*(mx-view.x);view.y=my-scale*(my-view.y);view.zoom=newZoom;drawBoard();
+      return;
+    }
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    const dx=t.clientX-touchBoard.startX,dy=t.clientY-touchBoard.startY;
+    if(!touchBoard.moved&&Math.hypot(dx,dy)>10){
+      touchBoard.moved=true;clearTouchLong();
+      if(touchBoard.mode==='pending'&&R.placing&&touchBoard.node){
+        // Convert to placement drag
+        const node=touchBoard.node;
+        e.preventDefault();
+        dragState.active=true;dragState.el=node.el;dragState.snapQ=null;dragState.snapR=null;
+        dragState.fromBoard=true;dragState.fromNode=node;
+        R.placedNodes=R.placedNodes.filter(n=>n!==node);
+        dragGhost.style.display='flex';
+        document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[node.el].icon;
+        document.getElementById('drag-ghost-name').textContent=NODE_DEFS[node.el].name;
+        moveDragGhost(t.clientX,t.clientY);drawBoard();
+        touchBoard.mode='drag';
+        return;
+      }
+      if(touchBoard.mode==='pending'&&!R.placing){
+        touchBoard.mode='pan';view.dragging=true;
+      }
+    }
+    if(touchBoard.mode==='pan'||view.dragging){
+      e.preventDefault();
+      view.x=touchBoard.startPanX+dx;view.y=touchBoard.startPanY+dy;
+      const maxPan=getBoardRange()*CELL*view.zoom*3;
+      view.x=Math.max(-maxPan,Math.min(maxPan,view.x));view.y=Math.max(-maxPan,Math.min(maxPan,view.y));
+      drawBoard();
+    }
+  },{passive:false});
+  boardCanvas.addEventListener('touchend',e=>{
+    clearTouchLong();
+    if(touchBoard.mode==='pinch'){
+      if(e.touches.length<2)touchBoard.mode=null;
+      view.dragging=false;return;
+    }
+    if(touchBoard.mode==='pending'&&!touchBoard.moved&&touchBoard.node&&!R.placing&&!touchBoard.suppressClick){
+      const node=touchBoard.node;
+      if(!R.selecting&&!R.paused){
+        if(NODE_DEFS[node.el]&&NODE_DEFS[node.el].combined)tapCombinedNode(node);
+        else tapNode(node);
+      }
+      touchBoard.suppressClick=true; // avoid synthetic click double-tap
+    }
+    view.dragging=false;
+    touchBoard.mode=null;touchBoard.node=null;
+  });
+  boardCanvas.addEventListener('touchcancel',()=>{
+    clearTouchLong();view.dragging=false;touchBoard.mode=null;touchBoard.node=null;
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -2811,28 +3143,73 @@ function getValidDropPositions(excludeNode){
 // ═══════════════════════════════════════════
 const dragState={active:false,el:null,snapQ:null,snapR:null,fromBoard:false,fromNode:null};
 let dragGhost=null;
+function updateDragSnap(clientX,clientY){
+  if(!dragState.active||!boardCanvas)return;
+  moveDragGhost(clientX,clientY);
+  const rect=boardCanvas.getBoundingClientRect();
+  const px=clientX-rect.left,py=clientY-rect.top;
+  if(px>=0&&px<=rect.width&&py>=0&&py<=rect.height){
+    const{q,r}=pixelToGrid(px,py);
+    const valid=getValidDropPositions(dragState.fromNode);
+    let best=null,bestDist=Infinity;
+    valid.forEach(a=>{const dist=Math.sqrt((a.q-q)**2+(a.r-r)**2);if(dist<1.2&&dist<bestDist){bestDist=dist;best=a;}});
+    if(best){dragState.snapQ=best.q;dragState.snapR=best.r;}else{dragState.snapQ=null;dragState.snapR=null;}
+  }else{dragState.snapQ=null;dragState.snapR=null;}
+  drawBoard();
+}
+function finishDragDrop(){
+  if(!dragState.active)return;
+  const el=dragState.el;
+  if(dragState.snapQ!==null){
+    if(dragState.fromBoard){
+      R.placedNodes.push({...dragState.fromNode,q:dragState.snapQ,r:dragState.snapR});
+      log(`${NODE_DEFS[el].name} moved.`,'g');
+    }
+    else placeNode(el,dragState.snapQ,dragState.snapR);
+  }else if(dragState.fromBoard&&dragState.fromNode){
+    R.inventory.push(dragState.fromNode);
+    log(`${NODE_DEFS[dragState.fromNode.el].name} returned to inventory.`,'n');
+    updInventoryUI();
+  }
+  dragState.active=false;dragState.el=null;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=false;dragState.fromNode=null;
+  dragGhost.style.display='none';document.querySelectorAll('.inv-node.dragging').forEach(n=>n.classList.remove('dragging'));drawBoard();
+  touchBoard.mode=null;
+}
+function beginInvDrag(el,item,clientX,clientY){
+  dragState.active=true;dragState.el=el;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=false;dragState.fromNode=null;
+  if(item)item.classList.add('dragging');
+  dragGhost.style.display='flex';
+  document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[el].icon;
+  document.getElementById('drag-ghost-name').textContent=NODE_DEFS[el].name;
+  moveDragGhost(clientX,clientY);
+}
 function setupDragDrop(){
+  if(document.getElementById('inv-nodes')?._dragSetup)return;
   dragGhost=document.getElementById('drag-ghost');
   const invNodes=document.getElementById('inv-nodes');
+  invNodes._dragSetup=true;
   invNodes.addEventListener('mousedown',e=>{
     const item=e.target.closest('.inv-node');if(!item)return;
     const el=item.dataset.el;if(!el||!NODE_DEFS[el])return;
-    e.preventDefault();dragState.active=true;dragState.el=el;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=false;dragState.fromNode=null;
-    item.classList.add('dragging');dragGhost.style.display='flex';
-    document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[el].icon;document.getElementById('drag-ghost-name').textContent=NODE_DEFS[el].name;
-    moveDragGhost(e.clientX,e.clientY);
+    e.preventDefault();beginInvDrag(el,item,e.clientX,e.clientY);
   });
+  invNodes.addEventListener('touchstart',e=>{
+    const item=e.target.closest('.inv-node');if(!item)return;
+    const el=item.dataset.el;if(!el||!NODE_DEFS[el])return;
+    e.preventDefault();
+    const t=e.touches[0];
+    beginInvDrag(el,item,t.clientX,t.clientY);
+  },{passive:false});
   boardCanvas.addEventListener('mousedown',e=>{
     if(!R||!R.placing||R.dead)return;
     const rect=boardCanvas.getBoundingClientRect();
     const node=getNodeAtPixel(e.clientX-rect.left,e.clientY-rect.top);if(!node)return;
-    if(node.immovable||!NODE_DEFS[node.el])return; // mirror and unknown nodes can't be moved
+    if(node.immovable||!NODE_DEFS[node.el])return;
     e.preventDefault();dragState.active=true;dragState.el=node.el;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=true;dragState.fromNode=node;
     R.placedNodes=R.placedNodes.filter(n=>n!==node);dragGhost.style.display='flex';
     document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[node.el].icon;document.getElementById('drag-ghost-name').textContent=NODE_DEFS[node.el].name;
     moveDragGhost(e.clientX,e.clientY);drawBoard();
   });
-  // Double-click placed node to return it to inventory
   boardCanvas.addEventListener('dblclick',e=>{
     if(!R||!R.placing||R.dead)return;
     const rect=boardCanvas.getBoundingClientRect();
@@ -2841,43 +3218,18 @@ function setupDragDrop(){
     e.preventDefault();
     dragState.active=false;dragState.el=null;dragState.fromBoard=false;dragState.fromNode=null;
     dragGhost.style.display='none';
-    R.placedNodes=R.placedNodes.filter(n=>n!==node);
-    R.inventory.push(node);
-    log(`${NODE_DEFS[node.el].name} returned to inventory.`,'n');
-    updInventoryUI();drawBoard();
+    returnNodeToInventory(node);
   });
-  document.addEventListener('mousemove',e=>{
-    if(!dragState.active)return;moveDragGhost(e.clientX,e.clientY);
-    const rect=boardCanvas.getBoundingClientRect();
-    const px=e.clientX-rect.left,py=e.clientY-rect.top;
-    if(px>=0&&px<=rect.width&&py>=0&&py<=rect.height){
-      const{q,r}=pixelToGrid(px,py);
-      const valid=getValidDropPositions(dragState.fromNode);
-      let best=null,bestDist=Infinity;
-      valid.forEach(a=>{const dist=Math.sqrt((a.q-q)**2+(a.r-r)**2);if(dist<1.2&&dist<bestDist){bestDist=dist;best=a;}});
-      if(best){dragState.snapQ=best.q;dragState.snapR=best.r;}else{dragState.snapQ=null;dragState.snapR=null;}
-    }else{dragState.snapQ=null;dragState.snapR=null;}
-    drawBoard();
-  });
-  document.addEventListener('mouseup',()=>{
-    if(!dragState.active)return;
-    const el=dragState.el;
-    if(dragState.snapQ!==null){
-      if(dragState.fromBoard){
-        // Preserve existing node state, just update position
-        R.placedNodes.push({...dragState.fromNode,q:dragState.snapQ,r:dragState.snapR});
-        log(`${NODE_DEFS[el].name} moved.`,'g');
-      }
-      else placeNode(el,dragState.snapQ,dragState.snapR);
-    }else if(dragState.fromBoard&&dragState.fromNode){
-      // Return to inventory preserving full state
-      R.inventory.push(dragState.fromNode);
-      log(`${NODE_DEFS[dragState.fromNode.el].name} returned to inventory.`,'n');
-      updInventoryUI();
-    }
-    dragState.active=false;dragState.el=null;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=false;dragState.fromNode=null;
-    dragGhost.style.display='none';document.querySelectorAll('.inv-node.dragging').forEach(n=>n.classList.remove('dragging'));drawBoard();
-  });
+  document.addEventListener('mousemove',e=>{if(dragState.active)updateDragSnap(e.clientX,e.clientY);});
+  document.addEventListener('mouseup',()=>finishDragDrop());
+  document.addEventListener('touchmove',e=>{
+    if(!dragState.active||!e.touches.length)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    updateDragSnap(t.clientX,t.clientY);
+  },{passive:false});
+  document.addEventListener('touchend',()=>finishDragDrop());
+  document.addEventListener('touchcancel',()=>finishDragDrop());
 }
 function moveDragGhost(cx,cy){dragGhost.style.left=`${cx-24}px`;dragGhost.style.top=`${cy-24}px`;}
 function placeNode(el,q,r){
@@ -3416,7 +3768,7 @@ function step(dt){
     const aqG=stagnantActive?0:(2.5+lvMult(getEffectiveLv('aq'))*2)*spd*genAmp('aq',true)*aqEff*dt*aqCeptus*tidalMult*confluenceMult*glassibleMult*tectonicAmp*crosswindBoostMult*aqNecro;
     if(aqG>=0){addArc(aqG);R.cyc_gen+=aqG;}
     else{R.arc=Math.max(0,R.arc+aqG);} // traitor Aqua siphons
-    {const ebb=disturbanceSev('ebbing');const effM=(R._stackedMit||0)*(1-ebb);const am2=document.getElementById('am2');am2.textContent=`${Math.round(effM*100)}%`;am2.style.color=ebb>0?'#c060e0':'';am2.title=ebb>0?`Ebbing active — mitigation −${Math.round(ebb*100)}%`:'';}
+    syncMitDisplay();
   }
   // ── Combined node step logic ──
   const lv_vp=META.nodeLevels.vp||1,lv_sl=META.nodeLevels.sl||1;
@@ -3522,7 +3874,7 @@ function step(dt){
   const mitCap=R.cardFlags.aq._moondancer?0.95:0.80;
   R._stackedMit=Math.max(-0.5,Math.min(mitCap,(getNodeMit()+tidewallBonus)*aqMitEff2+saltMit+glaciiMit+0.05*adjBoardStacks('ig','aq')));
   if(aquaCnt>0||saltMit>0||glaciiMit>0){
-    {const ebb=disturbanceSev('ebbing');const effM=(R._stackedMit||0)*(1-ebb);const am2=document.getElementById('am2');am2.textContent=`${Math.round(effM*100)}%`;am2.style.color=ebb>0?'#c060e0':'';am2.title=ebb>0?`Ebbing active — mitigation −${Math.round(ebb*100)}%`:'';}
+    syncMitDisplay();
   }
 
   // ── Tri-element node step logic ──
@@ -5021,7 +5373,7 @@ function consume(t){
 // SETTINGS
 // ═══════════════════════════════════════════
 const SETTINGS_KEY='athanor_settings';
-const SETTINGS={tooltipOpacity:1.0,fltOpacity:1.0,runWhenUnfocused:false,screenShake:true};
+const SETTINGS={tooltipOpacity:1.0,fltOpacity:1.0,tooltipsEnabled:true,runWhenUnfocused:false,screenShake:true};
 
 function toggleHubSettings(){
   const panel=document.getElementById('hub-settings');
@@ -5054,25 +5406,47 @@ function loadSettings(){
 function saveSettings(){
   try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(SETTINGS));}catch(e){}
 }
+function effectiveTooltipOpacity(){
+  return SETTINGS.tooltipsEnabled===false?0:(SETTINGS.tooltipOpacity??1);
+}
 function applySettings(){
-  // Apply tooltip opacity to all tooltip elements via CSS variable
-  document.documentElement.style.setProperty('--tt-opacity', SETTINGS.tooltipOpacity);
+  document.documentElement.style.setProperty('--tt-opacity', effectiveTooltipOpacity());
   document.documentElement.style.setProperty('--flt-opacity', SETTINGS.fltOpacity);
-  // Sync slider UI if visible
   const tts=document.getElementById('tt-opacity-slider');
   const fts=document.getElementById('flt-opacity-slider');
-  if(tts){tts.value=Math.round(SETTINGS.tooltipOpacity*100);document.getElementById('tt-opacity-val').textContent=`${Math.round(SETTINGS.tooltipOpacity*100)}%`;}
-  if(fts){fts.value=Math.round(SETTINGS.fltOpacity*100);document.getElementById('flt-opacity-val').textContent=`${Math.round(SETTINGS.fltOpacity*100)}%`;}
+  if(tts){tts.value=Math.round(SETTINGS.tooltipOpacity*100);const v=document.getElementById('tt-opacity-val');if(v)v.textContent=`${Math.round(SETTINGS.tooltipOpacity*100)}%`;}
+  if(fts){fts.value=Math.round(SETTINGS.fltOpacity*100);const v=document.getElementById('flt-opacity-val');if(v)v.textContent=`${Math.round(SETTINGS.fltOpacity*100)}%`;}
+  const ttToggle=document.getElementById('tooltips-toggle');
+  if(ttToggle)ttToggle.checked=SETTINGS.tooltipsEnabled!==false;
+  const ttRow=document.getElementById('tt-opacity-row');
+  if(ttRow)ttRow.style.opacity=SETTINGS.tooltipsEnabled===false?'.4':'1';
+  if(tts)tts.disabled=SETTINGS.tooltipsEnabled===false;
   const ruf=document.getElementById('run-unfocused-toggle');
   if(ruf)ruf.checked=!!SETTINGS.runWhenUnfocused;
   const sst=document.getElementById('screen-shake-toggle');
   if(sst)sst.checked=!!SETTINGS.screenShake;
   syncFullscreenToggle();
 }
+function setTooltipsEnabled(on){
+  SETTINGS.tooltipsEnabled=!!on;
+  document.documentElement.style.setProperty('--tt-opacity', effectiveTooltipOpacity());
+  const ttToggle=document.getElementById('tooltips-toggle');
+  if(ttToggle)ttToggle.checked=!!on;
+  const ttRow=document.getElementById('tt-opacity-row');
+  if(ttRow)ttRow.style.opacity=on?1:'.4';
+  const tts=document.getElementById('tt-opacity-slider');
+  if(tts)tts.disabled=!on;
+  // Also hide any currently open hover tooltips
+  if(!on){
+    document.querySelectorAll('.node-tooltip.show,.nu-tip.show,.tree-tooltip.show').forEach(el=>el.classList.remove('show'));
+  }
+  saveSettings();
+}
 function setTooltipOpacity(val){
   SETTINGS.tooltipOpacity=val/100;
-  document.getElementById('tt-opacity-val').textContent=`${val}%`;
-  document.documentElement.style.setProperty('--tt-opacity', val/100);
+  const label=document.getElementById('tt-opacity-val');
+  if(label)label.textContent=`${val}%`;
+  document.documentElement.style.setProperty('--tt-opacity', effectiveTooltipOpacity());
   saveSettings();
 }
 function setFltOpacity(val){
@@ -5253,7 +5627,15 @@ function dismissRunOverlays(){
   if(R){R.paused=false;R.selecting=false;}
   _pendingLesson=null;
 }
-function goScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function goScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  closeRpanel();
+  if(id==='s-hub'&&isMobileLayout()&&META._dockCollapsed===undefined){
+    META._dockCollapsed=true;applyDockState();
+  }
+  if(id==='s-run')requestAnimationFrame(()=>resizeBoardCanvas());
+}
 function goTitle(){stopLoop();dismissRunOverlays();goScreen('s-title');showTitleMenu();}
 function goHub(){
   stopLoop();
@@ -6160,18 +6542,14 @@ function setupHubBoardSystem(){
     drawHubBoard();
   });
 
-  // Mouse up
-  document.addEventListener('mouseup',e=>{
-    // Stop pan
+  function finishHubPointer(clientX,clientY){
     if(hubView.panning){hubView.panning=false;cv.style.cursor='';}
     if(!hubDragState.active)return;
     const el=hubDragState.node.el;
-
-    // Check furnace
     const furnace=document.getElementById('hub-furnace');
     if(furnace){
       const fr=furnace.getBoundingClientRect();
-      if(e.clientX>=fr.left&&e.clientX<=fr.right&&e.clientY>=fr.top&&e.clientY<=fr.bottom&&el){
+      if(clientX>=fr.left&&clientX<=fr.right&&clientY>=fr.top&&clientY<=fr.bottom&&el){
         if(META.nodeOwned[el]>0){
           const gain=getNodeConsumeGain(el);
           consumeOwnedNode(el,false);
@@ -6189,16 +6567,14 @@ function setupHubBoardSystem(){
         renderHubInventory();drawHubBoard();return;
       }
     }
-    // Drop on a forge ingredient slot
     if(el){
-      const fslot=document.elementFromPoint(e.clientX,e.clientY)?.closest('.forge-slot');
+      const fslot=document.elementFromPoint(clientX,clientY)?.closest('.forge-slot');
       if(fslot&&fslot.dataset.combined&&fslot.dataset.slotidx!==undefined){
         const combinedEl=fslot.dataset.combined;
         const slotIdx=parseInt(fslot.dataset.slotidx,10);
         const parents=COMBINED_PARENTS[combinedEl]||[];
         if(parents[slotIdx]===el){
           if(!forgeSlots[combinedEl])forgeSlots[combinedEl]=new Array(parents.length).fill(null);
-          // Don't double-assign the same element to two slots
           const existing=forgeSlots[combinedEl].indexOf(el);
           if(existing!==-1&&existing!==slotIdx)forgeSlots[combinedEl][existing]=null;
           forgeSlots[combinedEl][slotIdx]=el;
@@ -6212,7 +6588,7 @@ function setupHubBoardSystem(){
         const glowF=document.getElementById('hub-furnace-glow');if(glowF)glowF.style.opacity='0';
         renderHubInventory();renderForgePage();drawHubBoard();return;
       }
-      const arslot=document.elementFromPoint(e.clientX,e.clientY)?.closest('.forge-slot[data-arcanerow]');
+      const arslot=document.elementFromPoint(clientX,clientY)?.closest('.forge-slot[data-arcanerow]');
       if(arslot&&arslot.dataset.arcanerow&&arslot.dataset.slotidx!==undefined){
         const rowKey=arslot.dataset.arcanerow;
         const slotIdx=parseInt(arslot.dataset.slotidx,10);
@@ -6223,19 +6599,136 @@ function setupHubBoardSystem(){
         renderHubInventory();renderForgePage();return;
       }
     }
-    // Drop on board
     if(hubDragState.snapQ!==null){
       META.lastBoard.push({el,q:hubDragState.snapQ,r:hubDragState.snapR});
       META._boardEverSet=true;
       tutCheckTrigger('node-placed');
       autoSave();
     }
-    // Reset
     if(furnace){furnace.style.borderColor='#4a2010';furnace.style.boxShadow='';}
     const glow2=document.getElementById('hub-furnace-glow');if(glow2)glow2.style.opacity='0';
     hubDragState={active:false,node:null,snapQ:null,snapR:null,fromInv:null,fromBoard:false};
     hubDragGhost.style.display='none';
     renderHubInventory();drawHubBoard();renderForgePage();
+  }
+  document.addEventListener('mouseup',e=>finishHubPointer(e.clientX,e.clientY));
+
+  // Touch: pan / pinch / drag on hub board planner
+  const hubTouch={mode:null,startX:0,startY:0,moved:false,longTimer:null,pinchDist:0,pinchZoom:1,node:null};
+  cv.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      e.preventDefault();
+      hubTouch.mode='pinch';
+      hubTouch.pinchDist=touchDist(e.touches[0],e.touches[1]);
+      hubTouch.pinchZoom=hubView.zoom;
+      hubView.panning=false;
+      return;
+    }
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    const rect=cv.getBoundingClientRect();
+    const node=getHubBoardNodeAt(cv,t.clientX-rect.left,t.clientY-rect.top);
+    hubTouch.startX=t.clientX;hubTouch.startY=t.clientY;hubTouch.moved=false;hubTouch.node=node;
+    if(hubTouch.longTimer){clearTimeout(hubTouch.longTimer);hubTouch.longTimer=null;}
+    if(node){
+      hubTouch.mode='pending';
+      hubTouch.longTimer=setTimeout(()=>{
+        if(hubTouch.mode==='pending'&&!hubTouch.moved&&hubTouch.node){
+          META.lastBoard=META.lastBoard.filter(n=>n!==hubTouch.node);
+          autoSave();renderHubInventory();drawHubBoard();renderForgePage();
+          hubTouch.mode=null;
+        }
+      },480);
+    } else {
+      e.preventDefault();
+      hubTouch.mode='pan';
+      hubView.panning=true;hubView.startX=t.clientX;hubView.startY=t.clientY;
+      hubView.startPanX=hubView.x;hubView.startPanY=hubView.y;
+    }
+  },{passive:false});
+  cv.addEventListener('touchmove',e=>{
+    if(hubTouch.mode==='pinch'&&e.touches.length===2){
+      e.preventDefault();
+      const dist=touchDist(e.touches[0],e.touches[1]);
+      if(hubTouch.pinchDist<=0)return;
+      hubView.zoom=Math.max(hubView.minZoom,Math.min(hubView.maxZoom,hubTouch.pinchZoom*(dist/hubTouch.pinchDist)));
+      drawHubBoard();return;
+    }
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    const dx=t.clientX-hubTouch.startX,dy=t.clientY-hubTouch.startY;
+    if(!hubTouch.moved&&Math.hypot(dx,dy)>10){
+      hubTouch.moved=true;
+      if(hubTouch.longTimer){clearTimeout(hubTouch.longTimer);hubTouch.longTimer=null;}
+      if(hubTouch.mode==='pending'&&hubTouch.node){
+        e.preventDefault();
+        const node=hubTouch.node;
+        hubDragState={active:true,node,snapQ:null,snapR:null,fromInv:null,fromBoard:true};
+        META.lastBoard=META.lastBoard.filter(n=>n!==node);
+        hubDragGhost.innerHTML=NODE_DEFS[node.el].icon;
+        hubDragGhost.style.display='flex';
+        moveHubGhost(t.clientX,t.clientY);
+        renderHubInventory();drawHubBoard();
+        hubTouch.mode='drag';
+      }
+    }
+    if(hubTouch.mode==='pan'&&hubView.panning){
+      e.preventDefault();
+      hubView.x=hubView.startPanX+dx;hubView.y=hubView.startPanY+dy;drawHubBoard();
+    }
+  },{passive:false});
+  document.addEventListener('touchmove',e=>{
+    if(!hubDragState.active||!e.touches.length)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    moveHubGhost(t.clientX,t.clientY);
+    const rect=cv.getBoundingClientRect();
+    const px=t.clientX-rect.left,py=t.clientY-rect.top;
+    if(px>=0&&px<=rect.width&&py>=0&&py<=rect.height){
+      const{q,r}=hubPixelToGrid(cv,px,py);
+      const occupied=new Set(META.lastBoard.map(n=>`${n.q},${n.r}`));
+      const br=META.boardRange||1;
+      if(!occupied.has(`${q},${r}`)&&Math.abs(q)<=br&&Math.abs(r)<=br){
+        hubDragState.snapQ=q;hubDragState.snapR=r;
+      } else {hubDragState.snapQ=null;hubDragState.snapR=null;}
+    } else {hubDragState.snapQ=null;hubDragState.snapR=null;}
+    drawHubBoard();
+  },{passive:false});
+  if(strip&&!strip._touchDrag){
+    strip._touchDrag=true;
+    const invTouch={el:null,chip:null,startX:0,startY:0,dragging:false};
+    strip.addEventListener('touchstart',e=>{
+      const chip=e.target.closest('.inv-node');if(!chip)return;
+      const el=chip.dataset.el;if(!el)return;
+      const t=e.touches[0];
+      invTouch.el=el;invTouch.chip=chip;invTouch.startX=t.clientX;invTouch.startY=t.clientY;invTouch.dragging=false;
+    },{passive:true});
+    strip.addEventListener('touchmove',e=>{
+      if(!invTouch.el||!e.touches.length)return;
+      const t=e.touches[0];
+      if(!invTouch.dragging&&Math.hypot(t.clientX-invTouch.startX,t.clientY-invTouch.startY)>10){
+        e.preventDefault();
+        invTouch.dragging=true;
+        hubDragState={active:true,node:{el:invTouch.el},snapQ:null,snapR:null,fromInv:invTouch.el,fromBoard:false};
+        hubDragGhost.innerHTML=NODE_DEFS[invTouch.el].icon;
+        hubDragGhost.style.display='flex';
+        moveHubGhost(t.clientX,t.clientY);
+      }
+    },{passive:false});
+    strip.addEventListener('touchend',()=>{
+      if(!invTouch.dragging&&invTouch.el)selectForgeChip(invTouch.el);
+      invTouch.el=null;invTouch.chip=null;invTouch.dragging=false;
+    });
+  }
+  document.addEventListener('touchend',e=>{
+    if(hubTouch.longTimer){clearTimeout(hubTouch.longTimer);hubTouch.longTimer=null;}
+    if(hubTouch.mode==='pinch'){if(e.touches.length<2)hubTouch.mode=null;return;}
+    hubView.panning=false;
+    if(hubDragState.active){
+      const t=e.changedTouches[0];
+      finishHubPointer(t.clientX,t.clientY);
+    }
+    hubTouch.mode=null;hubTouch.node=null;
   });
 }
 
@@ -6392,49 +6885,59 @@ function updCardList(){
 // ═══════════════════════════════════════════
 // UI HELPERS
 // ═══════════════════════════════════════════
+function setArcPair(id,mid,text){
+  const a=document.getElementById(id),b=document.getElementById(mid);
+  if(a)a.textContent=text;if(b)b.textContent=text;
+}
 function updArcUI(){
   if(!R)return;
   if(R._illusion){
-    // Illusion lesson — hide the arcane bar and value
-    document.getElementById('av').textContent='???';
-    document.getElementById('am').textContent=' / ???';
-    const pf=document.getElementById('apf');if(pf){pf.style.width='0%';pf.classList.remove('has-ov');}
-    const pb=document.getElementById('arc-pb');if(pb)pb.classList.remove('has-ov');
-    const ovf=document.getElementById('ovf');if(ovf){ovf.style.width='0%';ovf.style.left='100%';}
-    const ovWrap=document.getElementById('ov-disp-wrap');if(ovWrap)ovWrap.classList.remove('show');
-    const stabTick=document.getElementById('stab-floor-tick');if(stabTick)stabTick.style.background='rgba(136,200,255,0.3)';
+    setArcPair('av','m-av','???');
+    setArcPair('am','m-am',' / ???');
+    [['apf','m-apf'],['arc-pb','m-arc-pb'],['ovf','m-ovf'],['ov-disp-wrap','m-ov-disp-wrap']].forEach(([a,b])=>{
+      const el=document.getElementById(a),mel=document.getElementById(b);
+      if(el&&el.classList){if(a==='apf'||a==='arc-pb')el.classList.remove('has-ov','low');}
+      if(mel&&mel.classList){if(b==='m-apf'||b==='m-arc-pb')mel.classList.remove('has-ov','low');}
+      if(a==='apf'||b==='m-apf'){if(el)el.style.width='0%';if(mel)mel.style.width='0%';}
+      if(a==='ovf'||b==='m-ovf'){if(el){el.style.width='0%';el.style.left='100%';}if(mel){mel.style.width='0%';mel.style.left='100%';}}
+      if(a==='ov-disp-wrap'||b==='m-ov-disp-wrap'){if(el)el.classList.remove('show');if(mel)mel.classList.remove('show');}
+    });
+    const stabTick=document.getElementById('stab-floor-tick'),mStab=document.getElementById('m-stab-floor-tick');
+    if(stabTick)stabTick.style.background='rgba(136,200,255,0.3)';
+    if(mStab)mStab.style.background='rgba(136,200,255,0.3)';
     return;
   }
   const pct=R.arc/R.arcMax,low=pct<.25,v=Math.round(R.arc);
-  document.getElementById('av').textContent=v;
-  document.getElementById('am').textContent=` / ${R.arcMax}`;
-  const pf=document.getElementById('apf');
-  const pb=document.getElementById('arc-pb');
-  const ovWrap=document.getElementById('ov-disp-wrap');
-  const ovVal=document.getElementById('ov-disp-val');
-  const ovf=document.getElementById('ovf');
+  setArcPair('av','m-av',String(v));
+  setArcPair('am','m-am',` / ${R.arcMax}`);
+  const pf=document.getElementById('apf'),mpf=document.getElementById('m-apf');
+  const pb=document.getElementById('arc-pb'),mpb=document.getElementById('m-arc-pb');
+  const ovWrap=document.getElementById('ov-disp-wrap'),movWrap=document.getElementById('m-ov-disp-wrap');
+  const ovVal=document.getElementById('ov-disp-val'),movVal=document.getElementById('m-ov-disp-val');
+  const ovf=document.getElementById('ovf'),movf=document.getElementById('m-ovf');
   const hasOv=R.overflow>0;
-  if(pb)pb.classList.toggle('has-ov',hasOv);
-  if(pf){
-    pf.classList.toggle('low',low);
-    pf.classList.toggle('has-ov',hasOv);
-  }
-  // Stability floor tick — turns red when Arcane drops below 28%
-  const stabTick=document.getElementById('stab-floor-tick');
-  if(stabTick){stabTick.style.background=pct<0.28?'rgba(255,100,100,0.9)':'rgba(136,200,255,0.7)';}
-  if(hasOv&&ovf){
+  [pb,mpb].forEach(el=>{if(el)el.classList.toggle('has-ov',hasOv);});
+  [pf,mpf].forEach(el=>{if(el){el.classList.toggle('low',low);el.classList.toggle('has-ov',hasOv);}});
+  const stabTick=document.getElementById('stab-floor-tick'),mStab=document.getElementById('m-stab-floor-tick');
+  const stabCol=pct<0.28?'rgba(255,100,100,0.9)':'rgba(136,200,255,0.7)';
+  if(stabTick)stabTick.style.background=stabCol;
+  if(mStab)mStab.style.background=stabCol;
+  if(hasOv){
     const overflowCap=(R._breathOverflow?R.arcMax:R.arcMax*0.5);
-    const arcZone=0.68; // left zone = arc; right zone = gold overflow buffer
-    const ovZone=1-arcZone;
-    if(pf)pf.style.width=`${Math.min(1,R.arc/R.arcMax)*arcZone*100}%`;
-    ovf.style.left=`${arcZone*100}%`;
-    ovf.style.width=`${Math.min(1,R.overflow/overflowCap)*ovZone*100}%`;
+    const arcZone=0.68,ovZone=1-arcZone;
+    const arcW=`${Math.min(1,R.arc/R.arcMax)*arcZone*100}%`;
+    const ovW=`${Math.min(1,R.overflow/overflowCap)*ovZone*100}%`;
+    [pf,mpf].forEach(el=>{if(el)el.style.width=arcW;});
+    [ovf,movf].forEach(el=>{if(el){el.style.left=`${arcZone*100}%`;el.style.width=ovW;}});
     if(ovVal)ovVal.textContent=`+${Math.round(R.overflow)}`;
+    if(movVal)movVal.textContent=`+${Math.round(R.overflow)}`;
     if(ovWrap)ovWrap.classList.add('show');
+    if(movWrap)movWrap.classList.add('show');
   }else{
-    if(pf)pf.style.width=`${pct*100}%`;
-    if(ovf){ovf.style.width='0%';ovf.style.left='100%';}
+    [pf,mpf].forEach(el=>{if(el)el.style.width=`${pct*100}%`;});
+    [ovf,movf].forEach(el=>{if(el){el.style.width='0%';el.style.left='100%';}});
     if(ovWrap)ovWrap.classList.remove('show');
+    if(movWrap)movWrap.classList.remove('show');
   }
 }
 function getNormalPulseDmgEst(){
@@ -6478,21 +6981,38 @@ function getActivePulseOverride(){
   }
   return null;
 }
+function syncMitDisplay(){
+  if(!R)return;
+  const ebb=disturbanceSev('ebbing');
+  const effM=(R._stackedMit||0)*(1-ebb);
+  const txt=`${Math.round(effM*100)}%`;
+  const col=ebb>0?'#c060e0':'';
+  const title=ebb>0?`Ebbing active — mitigation −${Math.round(ebb*100)}%`:'';
+  ['am2','m-am2'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.textContent=txt;el.style.color=col;el.title=title;
+  });
+}
 function updDrainDisplay(){
   const drEl=document.getElementById('dr');if(!drEl||!R)return;
+  const mDr=document.getElementById('m-dr');
   const ov=getActivePulseOverride();
+  let html='',plain=null;
   if(ov&&ov.mode==='drain'){
-    drEl.innerHTML=`<span class="dr-drain">−${Math.round(ov.drain)}/s</span>`;
-    return;
-  }
-  const normal=Math.round(getNormalPulseDmgEst());
-  if(ov&&(ov.mode==='spike'||ov.mode==='divination')){
-    const boosted=Math.round(ov.dmg);
-    const tag=ov.mode==='divination'?'🜀':'🜲';
-    drEl.innerHTML=`<span class="dr-normal">−${normal}/p</span><span class="dr-evo" title="${ov.label}">${tag} −${boosted}/hit</span>`;
+    html=`<span class="dr-drain">−${Math.round(ov.drain)}/s</span>`;
   }else{
-    drEl.textContent=`−${normal}/p`;
+    const normal=Math.round(getNormalPulseDmgEst());
+    if(ov&&(ov.mode==='spike'||ov.mode==='divination')){
+      const boosted=Math.round(ov.dmg);
+      const tag=ov.mode==='divination'?'🜀':'🜲';
+      html=`<span class="dr-normal">−${normal}/p</span><span class="dr-evo" title="${ov.label}">${tag} −${boosted}/hit</span>`;
+    }else{
+      plain=`−${normal}/p`;
+    }
   }
+  if(plain!=null){drEl.textContent=plain;if(mDr)mDr.textContent=plain;}
+  else{drEl.innerHTML=html;if(mDr)mDr.innerHTML=html;}
+  syncMitDisplay();
 }
 function updPulse(){
   if(!R)return;
@@ -8097,6 +8617,7 @@ function shopConsumeNode(el){
 
 // Board canvas click handler
 document.getElementById('board-canvas').addEventListener('click',e=>{
+  if(touchBoard.suppressClick){touchBoard.suppressClick=false;return;}
   if(!R||R.dead||R.selecting||R.paused||R.placing)return;
   const rect=boardCanvas.getBoundingClientRect();
   const px=e.clientX-rect.left,py=e.clientY-rect.top;
@@ -8106,6 +8627,21 @@ document.getElementById('board-canvas').addEventListener('click',e=>{
     else tapNode(node);
   }
 });
+
+window.addEventListener('resize',()=>{
+  if(document.getElementById('s-run')?.classList.contains('active'))resizeBoardCanvas();
+  if(isMobileLayout()){
+    const closeBtn=document.getElementById('rpanel-close');
+    if(closeBtn)closeBtn.style.display='inline-block';
+  }else{
+    closeRpanel();
+    const closeBtn=document.getElementById('rpanel-close');
+    if(closeBtn)closeBtn.style.display='none';
+  }
+});
+window.addEventListener('orientationchange',()=>setTimeout(()=>{
+  if(document.getElementById('s-run')?.classList.contains('active'))resizeBoardCanvas();
+},250));
 
 initTitleScreen();
 loadSettings();

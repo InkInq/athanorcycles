@@ -23,11 +23,13 @@
 
 - [x] Version label on title screen (`Demo v0.1.a`)
 - [x] ATHANOR cheat — ship as undiscoverable easter egg (no in-game hints)
+- [x] Mobile / touch layout (responsive CSS + tap / drag / pinch / Grimoire drawer)
 - [ ] Page label: Demo / Early Access / WIP
 - [ ] 5–8 screenshots + short cycle GIF
-- [ ] Store blurb + controls (mouse, pan/zoom, click, drag placement)
+- [ ] Store blurb + controls (mouse/touch, pan/zoom, click, drag placement)
 - [ ] Fonts: bundle or note CDN dependency
 - [ ] Upload HTML5 zip to itch
+- [ ] Smoke-test mobile embed (phone portrait + landscape)
 
 ---
 

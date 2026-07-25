@@ -106,14 +106,15 @@ Paste into the Description field:
 
 <h2>Controls</h2>
 <ul>
-  <li><strong>Mouse</strong> — click nodes, accept cards/lessons, navigate the Hub</li>
+  <li><strong>Mouse / touch</strong> — click or tap nodes, accept cards/lessons, navigate the Hub</li>
   <li><strong>Drag</strong> — place and rearrange nodes (run placement + board planner)</li>
-  <li><strong>Pan / zoom</strong> — drag the board · scroll to zoom</li>
-  <li><strong>Double-click</strong> — return a placed node to inventory (placement phase)</li>
+  <li><strong>Pan / zoom</strong> — drag the board · scroll or pinch to zoom</li>
+  <li><strong>Double-click / long-press</strong> — return a placed node to inventory (placement phase)</li>
+  <li><strong>Mobile</strong> — Grimoire panel opens via the ⬡ button; Hub stacks vertically with a collapsible Board Planner</li>
   <li><strong>Pause</strong> — Esc / pause menu · Settings for opacity, shake, pause-on-blur</li>
 </ul>
 
-<p><em>Desktop browser recommended. Chrome / Edge / Firefox.</em></p>
+<p><em>Desktop and mobile browsers supported (touch: tap nodes, drag to place, pinch to zoom). Chrome / Edge / Firefox / Safari.</em></p>
 
 <hr>
 
