@@ -1402,7 +1402,7 @@ const NODE_DEFS={
   ae:{name:'Aestus', icon:'🜍',color:'#207890',colorMid:'#40b8d8',colorDim:'#08181e',combined:true,tri:true,els:['ig','tr','aq']},
   ju:{name:'Juncus', icon:'🜔',color:'#3060a0',colorMid:'#5898e0',colorDim:'#081020',combined:true,tri:true,els:['ig','vt','aq']},
   ce:{name:'Ceptus', icon:'🜐',color:'#389870',colorMid:'#68d8a8',colorDim:'#081c14',combined:true,tri:true,els:['tr','vt','aq']},
-  ar:{name:'Arcane Node',icon:'α',color:'#c8c8d8',colorMid:'#f0f0f8',colorDim:'#1a1a24'},
+  ar:{name:'Arcane',icon:'α',color:'#c8c8d8',colorMid:'#f0f0f8',colorDim:'#1a1a24'},
 };
 const NODE_ARCHETYPE={
   ig:'Click to burst Arcane. Builds heat — overloads if pushed too hard.',
@@ -1633,7 +1633,7 @@ function grantArcaneNode(source){
   META.nodeOwned.ar=1;
   META.nodeMax.ar=1;
   if(!META.nodeLevels.ar)META.nodeLevels.ar=1;
-  log(`α Arcane Node ${restored?'restored':'obtained'}! (${source})`,'g');
+  log(`α Arcane ${restored?'restored':'obtained'}! (${source})`,'g');
   autoSave();
   return true;
 }
@@ -2531,6 +2531,16 @@ function _hasBelowNeighbor(node){
   if(!node||!R||!R.placedNodes)return false;
   return R.placedNodes.some(n=>n!==node && n.q===node.q+1 && n.r===node.r+1);
 }
+function nodeLabelMaxW(hw,hh,yOff){return Math.max(8,hw*2*(1-Math.min(1,Math.max(0,yOff/hh)))*0.9);}
+function fillNodeName(ctx,text,x,y,hw,hh,yOff,basePx){
+  const label=text.toUpperCase(),maxW=nodeLabelMaxW(hw,hh,yOff);
+  let fs=Math.round(basePx);
+  ctx.font=`600 ${fs}px Cinzel,serif`;
+  const w=ctx.measureText(label).width;
+  if(w>maxW)fs=Math.max(5,Math.floor(fs*maxW/w));
+  ctx.font=`600 ${fs}px Cinzel,serif`;
+  ctx.fillText(label,x,y);
+}
 function drawNodeDiamond(ctx,x,y,el,node){
   const def=NODE_DEFS[el];const hw=CELL*view.zoom*0.52,hh=CELL*view.zoom*0.36;
   if(!def)return;
@@ -2558,8 +2568,8 @@ function drawNodeDiamond(ctx,x,y,el,node){
   ctx.shadowBlur=isOverloaded?0:glowStrength;
   ctx.fillText(def.icon,x,y-cz*0.04);
   ctx.globalAlpha=1;ctx.shadowBlur=0;
-  ctx.font=`600 ${Math.round(cz*0.09)}px Cinzel,serif`;ctx.fillStyle=isOverloaded?'#555':def.colorMid;
-  ctx.fillText(def.name.toUpperCase(),x,y+cz*0.14);
+  ctx.fillStyle=isOverloaded?'#555':def.colorMid;
+  fillNodeName(ctx,def.name,x,y+cz*0.14,hw,hh,cz*0.14,cz*0.078);
   const nodeLv=META.nodeLevels[el]||1;
   const effNodeLv=getEffectiveLv(el);
   if(effNodeLv>1){ctx.font=`${Math.round(cz*0.14)}px Cinzel,serif`;ctx.fillStyle=effNodeLv>nodeLv?'rgba(120,224,160,.95)':'rgba(220,190,110,.9)';ctx.fillText(toRoman(effNodeLv),x,y+cz*0.26);}
@@ -2682,9 +2692,8 @@ function drawCombinedNodeDiamond(ctx,x,y,el,node){
   ctx.globalAlpha=1;ctx.shadowBlur=0;
 
   // ── Name ──
-  ctx.font=`600 ${Math.round(cz*0.08)}px Cinzel,serif`;
   ctx.fillStyle=isBurnout?'#553333':isOverloaded?'#555577':isCrystal?'#78d8f0':isNearBurst?'#ff8040':def.colorMid;
-  ctx.fillText(def.name.toUpperCase(),x,y+cz*0.13);
+  fillNodeName(ctx,def.name,x,y+cz*0.13,hw,hh,cz*0.13,cz*0.072);
 
   // ── Level ──
   const lv=META.nodeLevels[el]||1;
@@ -3614,7 +3623,7 @@ function stepArcanum(dt){
   const s=ar.state;
   if(s.stressed){
     s.cool-=dt;
-    if(s.cool<=0){s.stressed=false;s.stress=0;s.cool=0;log('Arcane Node recovered from stress.','g');}
+    if(s.cool<=0){s.stressed=false;s.stress=0;s.cool=0;log('Arcane recovered from stress.','g');}
     return;
   }
   s.stress=Math.max(0,(s.stress||0)-2*dt);
@@ -4104,7 +4113,7 @@ function firePulse(){
         arS.stressed=true;
         arS.cool=10*(1+disturbanceSev('interference'));
         const st=ensureArcanumRunStats();if(st)st.stressOuts=(st.stressOuts||0)+1;
-        log('Arcane Node overstressed — observance paused.','w');
+        log('Arcane overstressed — observance paused.','w');
         flt(arN,'α Stress!',NODE_DEFS.ar.colorMid);
       }
     }
@@ -4794,8 +4803,8 @@ const GRAD_REWARDS=[
     }
     updDisturbanceUI();log(`Cleanse: removed ${removed} Disturbance stack${removed!==1?'s':''}.`,'g');
   }},
-  {id:'arcane',name:'Arcane Node',icon:'α',desc:'Obtain the Arcane Node.',apply(r){
-    if(!grantArcaneNode('Graduation')){META.au+=50;document.getElementById('tau').textContent=Math.floor(META.au);log('Arcane Node already in your collection — +50 AU instead.','g');}
+  {id:'arcane',name:'Arcane',icon:'α',desc:'Obtain Arcane.',apply(r){
+    if(!grantArcaneNode('Graduation')){META.au+=50;document.getElementById('tau').textContent=Math.floor(META.au);log('Arcane already in your collection — +50 AU instead.','g');}
   }},
 ];
 
@@ -5814,7 +5823,7 @@ function hubUpgradeArcaneRow(rowKey){
 function hubBuyArcane(){
   if(hasArcaneNodeCopy())return;
   const cost=getArcaneShopPrice();
-  if(META.au<cost){log(`Need ${cost} AU for the Arcane Node.`,'w');return;}
+  if(META.au<cost){log(`Need ${cost} AU for Arcane.`,'w');return;}
   META.au-=cost;
   grantArcaneNode('The Grimoire');
   renderForgePage();updHubUI();autoSave();
@@ -5903,7 +5912,7 @@ function renderForgeArcanumCenter(){
   const triCnt=(META.unlockedCombined||[]).filter(e=>NODE_DEFS[e]&&NODE_DEFS[e].tri).length;
 
   if(!arcaneOwned()){
-    con.innerHTML=`<div class="hub-sec-title" style="text-align:center;margin-bottom:12px;">α Arcane Node</div>
+    con.innerHTML=`<div class="hub-sec-title" style="text-align:center;margin-bottom:12px;">α Arcane</div>
       <div style="text-align:center;font-size:72px;color:${NODE_DEFS.ar.colorMid};opacity:0.35;margin:20px 0;font-family:serif;">α</div>
       <div style="text-align:center;font-family:'Cinzel',serif;font-size:18px;color:var(--gold);margin-bottom:6px;">${shopPrice.toLocaleString()} AU</div>
       <div style="font-size:15px;color:var(--text-dim);text-align:center;line-height:1.6;margin-bottom:14px;">
@@ -5911,13 +5920,13 @@ function renderForgeArcanumCenter(){
         Discounts: ×0.5 per duo discovered (${duoCnt}), ×0.4 per tri (${triCnt}).<br>
         Also: Graduation reward · Cycle 50 milestone.
       </div>
-      <div style="text-align:center;"><div class="mu-btn ${META.au>=shopPrice?'':'cant'}" onclick="hubBuyArcane()" style="display:inline-block;padding:8px 24px;">Obtain Arcane Node — ${shopPrice.toLocaleString()} AU</div></div>`;
+      <div style="text-align:center;"><div class="mu-btn ${META.au>=shopPrice?'':'cant'}" onclick="hubBuyArcane()" style="display:inline-block;padding:8px 24px;">Obtain Arcane — ${shopPrice.toLocaleString()} AU</div></div>`;
     return;
   }
 
   const repurchaseHTML=!hasArcaneNodeCopy()?`<div style="background:rgba(200,164,72,.08);border:1px solid var(--gold-dim);border-radius:4px;padding:10px 12px;max-width:360px;margin:0 auto 14px;text-align:center;">
-      <div style="font-size:15px;color:var(--text-dim);line-height:1.5;margin-bottom:8px;">No Arcane Node in inventory. Repurchase to plan and place it from Preparation. Consuming grants <b>+${ARCANE_NODE_CONSUME_BONUS}</b> permanent Arcane threshold.</div>
-      <div class="mu-btn ${META.au>=shopPrice?'':'cant'}" onclick="hubBuyArcane()" style="display:inline-block;padding:6px 18px;">Repurchase Arcane Node — ${shopPrice.toLocaleString()} AU</div>
+      <div style="font-size:15px;color:var(--text-dim);line-height:1.5;margin-bottom:8px;">No Arcane in inventory. Repurchase to plan and place it from Preparation. Consuming grants <b>+${ARCANE_NODE_CONSUME_BONUS}</b> permanent Arcane threshold.</div>
+      <div class="mu-btn ${META.au>=shopPrice?'':'cant'}" onclick="hubBuyArcane()" style="display:inline-block;padding:6px 18px;">Repurchase Arcane — ${shopPrice.toLocaleString()} AU</div>
     </div>`:'';
 
   const oppRows=ARCANE_ROW_ORDER.filter(k=>ARCANE_OPPOSITION[k]).map(k=>{
@@ -5935,9 +5944,9 @@ function renderForgeArcanumCenter(){
       <div class="arcanum-stat-row"><span>Damage mitigated</span><span>${(hist.mitBlocked||0).toLocaleString()}</span></div>
       <div class="arcanum-stat-row"><span>Alchemy transmuted</span><span>${(hist.alchemyArc||0).toLocaleString()} Arc · ${hist.alchemyAu||0} AU</span></div>
       <div class="arcanum-stat-row"><span>Stress overloads</span><span>${hist.stressOuts||0}</span></div>
-    </div>`:`<div style="max-width:360px;margin:14px auto 0;font-size:15px;color:var(--text-lo);text-align:center;line-height:1.5;">No Arcane Node placed in the latest run.</div>`;
+    </div>`:`<div style="max-width:360px;margin:14px auto 0;font-size:15px;color:var(--text-lo);text-align:center;line-height:1.5;">No Arcane placed in the latest run.</div>`;
 
-  con.innerHTML=`<div class="hub-sec-title" style="text-align:center;margin-bottom:8px;">α Arcane Node</div>
+  con.innerHTML=`<div class="hub-sec-title" style="text-align:center;margin-bottom:8px;">α Arcane</div>
     ${repurchaseHTML}
     <div style="display:flex;justify-content:center;margin:12px 0;">
       <div style="width:120px;height:120px;border:2px solid ${NODE_DEFS.ar.colorMid};transform:rotate(45deg);display:flex;align-items:center;justify-content:center;background:rgba(240,240,248,.06);box-shadow:0 0 24px rgba(240,240,248,.15);">
@@ -5958,7 +5967,7 @@ function renderForgeArcanumCenter(){
 
 function renderForgeArcanumRows(){
   const con=document.getElementById('forge-arcanum-rows');if(!con)return;
-  if(!arcaneOwned()){con.innerHTML=`<div class="hub-sec-title">Level Up</div><div class="empty-note" style="margin-top:12px;">Obtain the Arcane Node to unlock row upgrades.</div>`;return;}
+  if(!arcaneOwned()){con.innerHTML=`<div class="hub-sec-title">Level Up</div><div class="empty-note" style="margin-top:12px;">Obtain Arcane to unlock row upgrades.</div>`;return;}
   const onBoard={};(META.lastBoard||[]).forEach(n=>{onBoard[n.el]=(onBoard[n.el]||0)+1;});
   con.innerHTML=`<div class="hub-sec-title" style="margin-bottom:8px;">Level Up</div>
     <div style="font-size:15px;color:var(--text-dim);margin-bottom:10px;">Feed nodes + AU. Opposition raises fuel costs on paired rows.</div>`+
@@ -6801,7 +6810,7 @@ function drawHubBoard(){
     ctx.closePath();ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=def.colorMid;ctx.lineWidth=1.2;ctx.stroke();
     ctx.font=`${Math.round(cellZ*0.30)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.shadowColor=def.colorMid;ctx.shadowBlur=12;ctx.fillText(def.icon,x,y-cellZ*0.04);ctx.shadowBlur=0;
-    ctx.font=`600 ${Math.round(cellZ*0.16)}px Cinzel,serif`;ctx.fillStyle=def.colorMid;ctx.fillText(def.name.toUpperCase(),x,y+cellZ*0.14);
+    ctx.fillStyle=def.colorMid;fillNodeName(ctx,def.name,x,y+cellZ*0.14,hw,hh,cellZ*0.14,cellZ*0.10);
     const hl=META.nodeLevels[n.el]||1;
     if(hl>1){ctx.font=`${Math.round(cellZ*0.14)}px Cinzel,serif`;ctx.fillStyle='rgba(220,190,110,.85)';ctx.fillText(toRoman(hl),x,y+cellZ*0.26);}
   });
@@ -7438,10 +7447,10 @@ const GLOSSARY=[
    <div class="comp-sec"><div class="comp-h">Synergies</div><p>A passive-build keystone &mdash; its +30% lifts Terra, Salt, Anima, Aqua and more; pair with heavy mitigation to keep the reserve fed.</p></div>
    <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p>Low-pulse early cycles give it little to feed on.</p></div>`,
    svg:`<svg viewBox="0 0 240 70"><circle cx="40" cy="35" r="18" fill="#081c14" stroke="#68d8a8"/><text x="40" y="40" fill="#68d8a8" font-size="16" text-anchor="middle">🜐</text><text x="150" y="40" fill="var(--text-dim)" font-size="9" text-anchor="middle" font-family="Cinzel">blocked dmg → +30% passive</text></svg>`},
-  {id:'comp-ar',cat:'Compendium',icon:'α',title:'Arcane Node',unlock:()=>arcaneOwned(),
+  {id:'comp-ar',cat:'Compendium',icon:'α',title:'Arcane',unlock:()=>arcaneOwned(),
    body:`<div class="comp-role">Automation Hub</div>
-   <div class="comp-sec"><div class="comp-h">How it works</div><p>The Arcane Node observes nearby nodes and can auto-click them, passively generate Arcane, mitigate pulses, and transmute blocked damage. Upgrade its five rows in The Forge tab with fuel nodes. If you consume the physical node in the Hub furnace, you gain <b>+500 permanent Arcane threshold</b> — but lose the ability to place it until you repurchase a copy from The Forge.</p></div>
-   <div class="comp-sec"><div class="comp-h">Repurchase</div><p>Unlocking the system is permanent. If your copy is consumed or missing from inventory, open <b>The Forge</b> (♃ tab) and use <b>Repurchase Arcane Node</b> to restore it for AU (discounted by combined nodes discovered).</p></div>
+   <div class="comp-sec"><div class="comp-h">How it works</div><p>Arcane observes nearby nodes and can auto-click them, passively generate Arcane, mitigate pulses, and transmute blocked damage. Upgrade its five rows in The Forge tab with fuel nodes. If you consume the physical node in the Hub furnace, you gain <b>+500 permanent Arcane threshold</b> — but lose the ability to place it until you repurchase a copy from The Forge.</p></div>
+   <div class="comp-sec"><div class="comp-h">Repurchase</div><p>Unlocking the system is permanent. If your copy is consumed or missing from inventory, open <b>The Forge</b> (♃ tab) and use <b>Repurchase Arcane</b> to restore it for AU (discounted by combined nodes discovered).</p></div>
    <div class="comp-sec"><div class="comp-h">Synergies</div><p>Observation expands which nodes it can reach; Efficiency and Aethergy raise auto-yield and baseline gen; Constitution adds mitigation; Alchemy converts blocked pulse damage into Arcane.</p></div>`,
    svg:`<svg viewBox="0 0 240 70"><circle cx="40" cy="35" r="18" fill="#1a1a24" stroke="#f0f0f8"/><text x="40" y="40" fill="#f0f0f8" font-size="16" text-anchor="middle">α</text><text x="150" y="40" fill="var(--text-dim)" font-size="9" text-anchor="middle" font-family="Cinzel">observes · automates</text></svg>`},
   {id:'au',cat:'Progression',icon:'⊕',title:'AU & The Hub',unlock:()=>true,
