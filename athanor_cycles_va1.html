@@ -294,7 +294,7 @@ body{
 .tst{text-align:right;}
 .tst-l{font-family:'Cinzel',serif;font-size:15px;letter-spacing:1px;color:var(--text-dim);}
 .tst-v{font-family:'Cinzel',serif;font-size:19px;color:var(--gold);text-shadow:0 0 8px rgba(200,160,70,.3);}
-.gw{width:92px;}
+.gw{min-width:92px;}
 .gb{height:4px;background:rgba(0,0,0,.7);border:1px solid var(--border-gold);border-radius:2px;overflow:hidden;margin-top:2px;}
 .gf{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold));border-radius:2px;transition:width .5s;}
 .run-main{display:flex;flex:1;overflow:hidden;}
@@ -556,6 +556,10 @@ body{
 #rpanel-toggle,#rpanel-backdrop{display:none;}
 #board-canvas{touch-action:none;}
 #hub-board-canvas{touch-action:none;}
+/* Desktop defaults — declared BEFORE the mobile media query so its overrides win the cascade */
+#mobile-arc-strip{display:none;}
+#run-bottom{display:contents;}
+.place-prompt .mobile-only{display:none;}
 
 @media (max-width:960px){
   .t-main{font-size:32px;letter-spacing:5px;}
@@ -614,7 +618,7 @@ body{
   .tst-l{font-size:11px;}
   .tst-v{font-size:15px;}
   .top-r{gap:8px;}
-  .gw{width:72px;}
+  .gw{min-width:72px;}
 
   /* Mobile Arcane strip — above generation/stability in the bottom chrome */
   #mobile-arc-strip{
@@ -677,14 +681,6 @@ body{
   .bbar{border-top:none;}
   .bbar::before{display:none;}
 }
-#mobile-arc-strip{display:none;}
-#run-bottom{display:contents;}
-
-@media (max-width:960px){
-  .place-prompt .mobile-only{display:inline;}
-  #run-bottom{display:flex;}
-}
-.place-prompt .mobile-only{display:none;}
 
 @media (max-width:700px) and (orientation:portrait){
   .t-main{font-size:26px;letter-spacing:3px;}
@@ -1217,7 +1213,7 @@ body{
       <button class="bb" id="btn-cln" onclick="consume('cln')" onmouseenter="showAuTip(this,'Cleanse','Removes one random active Disturbance. High cost — save for severe stacks. Cost: 25 AU.',event)" onmousemove="moveAuTip(event)" onmouseleave="hideAuTip()"><div class="bb-n">CLEANSE</div><div class="bb-s">−1 Disturb</div><div class="bb-s">25 AU</div></button>
       <div class="sp"></div>
       <button class="bb" onclick="pauseRun()"><div class="bb-n">PAUSE</div><div class="bb-s">[P]</div></button>
-      <button class="bb" onclick="endRun(false)" style="border-color:var(--gold-soft)"><div class="bb-n">END RUN</div><div class="bb-s">[R]</div></button>
+      <button class="bb" onclick="endRun(false)" style="border-color:var(--gold-soft)"><div class="bb-n">END RUN</div></button>
     </div>
   </div>
 </div><!-- /s-run -->
@@ -1578,6 +1574,9 @@ const ARCANE_NODE_CONSUME_BONUS=500;
 const PULSE_DMG_BASE=75; // tuned for 500 start (was 90 at 1000 threshold)
 const PULSE_DMG_CRUCIBLE=112; // was 135
 const ARCANE_BASE_PRICE=1000000;
+// Arcane (board-amplifier) cards cost Arcane mid-run; kept below the 500 base threshold so they're
+// actually affordable when offered (was 700 — unbuyable without +200 max from consumes/graduation).
+const ARCANE_CARD_COST=400;
 const ARCANE_ROW_DEFS={
   obs:{name:'Observation',fuelEl:'vt',color:'#80d860',desc:'Expands observance. L5: distance-2 on cardinals.'},
   eff:{name:'Efficiency',fuelEl:'aq',color:'#58a8e8',desc:'Auto-yield +5%/level (50% base, 75% max).'},
@@ -1706,9 +1705,6 @@ function trackArcanumArc(amt,type){
   else if(type==='alchemy')s.alchemyArc=(s.alchemyArc||0)+amt;
 }
 
-function hasParentsOnBoard(el){
-  return combinedParentsPresent(el);
-}
 
 function checkCombinedUnlock(el){
   if(META.unlockedCombined.includes(el))return;
@@ -1736,11 +1732,6 @@ function checkAllCombinedUnlocks(){
   }
 }
 
-function combinedParentsPresent(el){
-  // True when all parent element types for `el` are present on the board.
-  const req=COMBINED_REQS[el];if(!req||!R||!R.placedNodes)return false;
-  return req.parents.every(p=>R.placedNodes.some(n=>n.el===p));
-}
 function combinedParentsAdjacent(el){
   // True when one node of each parent type can be chosen such that every pair
   // in the group is mutually adjacent (each touches each) — using the game's
@@ -1903,7 +1894,7 @@ const CARDS=[
   // ── Ignis Tier 2 & Pinnacle ──
   {id:'ig5',el:'ig',name:'Conflagration',icon:'🜂',desc:'Each click while heat ≥80 chains to the next 3 clicks for bonus yield. All 3 bonus clicks must also be at heat ≥80.',cost:300,apply:r=>{r.cardFlags.ig._conflagration=true;}},
   {id:'ig6',el:'ig',name:'Forge Heat',icon:'🜂',desc:'Sustained clicking without overloading builds +5% per click (caps +50%). Resets on overload.',cost:330,apply:r=>{r.cardFlags.ig._forgeHeat=true;}},
-  {id:'ig7',el:'ig',name:'Chain Ignition',icon:'🜂',desc:'Clicking any Ignis-derived node during a crit window triggers a bonus burst.',cost:365,apply:r=>{r.cardFlags.ig._chainIgnition=true;}},
+  {id:'ig7',el:'ig',name:'Chain Ignition',icon:'🜂',desc:'Clicking Ignis while a Vapor crit window is open triggers a bonus burst.',cost:365,apply:r=>{r.cardFlags.ig._chainIgnition=true;}},
   {id:'ig8',el:'ig',name:'Ember Bulwark',icon:'🜂',desc:'When an Ignis-derived node is overloaded or burnt out and a pulse hits, its remaining cooldown absorbs pulse damage proportionally. The node resets instantly. With an Anima placed: cooldowns +0.5s, but other Ignis-derived nodes generate +5%.',cost:400,apply:r=>{r.cardFlags.ig._emberBulwark=true;}},
   {id:'ig9',el:'ig',name:'Eternal Flame',icon:'🜂',desc:'The flame never dies: overload no longer locks this node — it smolders, clickable at 40% output while cooling. Each click permanently raises click value this run.',cost:500,apply:r=>{r.cardFlags.ig._eternalFlame=true;}},
   {id:'ig10',el:'ig',name:'Calcify',icon:'🜂',desc:'Placement: Ignis nodes gain +5% click gen per adjacent Terra; adjacent Terra fills 5% slower per adjacent Ignis.',cost:500,apply:r=>{r.cardFlags.ig._calcify=true;}},
@@ -1929,29 +1920,29 @@ const CARDS=[
   {id:'aq9',el:'aq',name:'Moondancer',icon:'🜄',desc:'Mitigation cap removed. Can climb very high but never reaches 100% — pulses always deal some damage.',cost:500,apply:r=>{r.cardFlags.aq._moondancer=true;}},
   {id:'aq10',el:'aq',name:'Sanctify',icon:'🜄',desc:'Placement: each endured pulse grants +5 Arcane per Aqua–Terra adjacency (max 3) and +5% Terra fill for 2s. Adjacent Ignis clicks are 5% weaker per adjacent Aqua.',cost:500,apply:r=>{r.cardFlags.aq._sanctify=true;}},
   // ── Arcane cards — Board Amplifiers ──
-  {id:'ar1',el:'ar',name:'Confluence',icon:'🜀',desc:'All nodes generate +20% for the rest of this run. The board hums as one.',cost:700,apply:r=>{r._confluence=(r._confluence||0)+0.20;log('Confluence: all nodes +20% output.','g');}},
-  {id:'ar2',el:'ar',name:'Resonant Field',icon:'🜀',desc:'Each node type on the board boosts all other types by +8%. Stacks per unique pairing.',cost:700,apply:r=>{
+  {id:'ar1',el:'ar',name:'Confluence',icon:'🜀',desc:'All nodes generate +20% for the rest of this run. The board hums as one.',cost:ARCANE_CARD_COST,apply:r=>{r._confluence=(r._confluence||0)+0.20;log('Confluence: all nodes +20% output.','g');}},
+  {id:'ar2',el:'ar',name:'Resonant Field',icon:'🜀',desc:'Each node type on the board boosts all other types by +8%. Stacks per unique pairing.',cost:ARCANE_CARD_COST,apply:r=>{
     const types=new Set(r.placedNodes.map(n=>n.el));
     const pairs=types.size*(types.size-1);
     r._resonantField=(r._resonantField||0)+pairs*0.08;
     log(`Resonant Field: +${Math.round(pairs*8)}% from ${types.size} element types.`,'g');
   }},
-  {id:'ar3',el:'ar',name:"Athanor's Breath",icon:'🜀',desc:'Overflow capacity doubled to 100% of Arcane Max for this run. Overflow converts to AU at twice the normal rate.',cost:700,apply:r=>{r._breathOverflow=true;log("Athanor's Breath: overflow capacity doubled.",'g');}},
+  {id:'ar3',el:'ar',name:"Athanor's Breath",icon:'🜀',desc:'Overflow capacity doubled to 100% of Arcane Max for this run. Overflow converts to AU at twice the normal rate.',cost:ARCANE_CARD_COST,apply:r=>{r._breathOverflow=true;log("Athanor's Breath: overflow capacity doubled.",'g');}},
   // ── Arcane cards — Pulse Manipulation ──
-  {id:'ar4',el:'ar',name:'Abjuration',icon:'🜀',desc:'The next 3 pulses deal no damage. Full shield.',cost:700,apply:r=>{r._abjuration=(r._abjuration||0)+3;log('Abjuration: next 3 pulses shielded.','g');}},
-  {id:'ar5',el:'ar',name:'Inversion',icon:'🜀',desc:'The next 3 pulses generate Arcane instead of draining it, equal to what they would have dealt.',cost:700,apply:r=>{r._inversion=(r._inversion||0)+3;log('Inversion: next 3 pulses reversed.','g');}},
-  {id:'ar6',el:'ar',name:'Attenuation',icon:'🜀',desc:'Pulse damage reduced by 15% for the rest of this run. Stacks with mitigation.',cost:700,apply:r=>{r._attenuation=(r._attenuation||0)+0.15;log('Attenuation: pulse damage -15%.','g');}},
+  {id:'ar4',el:'ar',name:'Abjuration',icon:'🜀',desc:'The next 3 pulses deal no damage. Full shield.',cost:ARCANE_CARD_COST,apply:r=>{r._abjuration=(r._abjuration||0)+3;log('Abjuration: next 3 pulses shielded.','g');}},
+  {id:'ar5',el:'ar',name:'Inversion',icon:'🜀',desc:'The next 3 pulses generate Arcane instead of draining it, equal to what they would have dealt.',cost:ARCANE_CARD_COST,apply:r=>{r._inversion=(r._inversion||0)+3;log('Inversion: next 3 pulses reversed.','g');}},
+  {id:'ar6',el:'ar',name:'Attenuation',icon:'🜀',desc:'Pulse damage reduced by 15% for the rest of this run. Stacks with mitigation.',cost:ARCANE_CARD_COST,apply:r=>{r._attenuation=(r._attenuation||0)+0.15;log('Attenuation: pulse damage -15%.','g');}},
   // ── Arcane cards — Cross-Element Synergy ──
-  {id:'ar7',el:'ar',name:'Elemental Accord',icon:'🜀',desc:'Gain 80 Arcane for each unique element type on the board. 4 types = 320 Arcane.',cost:700,apply:r=>{
+  {id:'ar7',el:'ar',name:'Elemental Accord',icon:'🜀',desc:'Gain 80 Arcane for each unique element type on the board. 4 types = 320 Arcane.',cost:ARCANE_CARD_COST,apply:r=>{
     const types=new Set(r.placedNodes.map(n=>NODE_DEFS[n.el]?.combined?null:n.el).filter(Boolean));
     const gain=types.size*80;addArc(gain);log(`Elemental Accord: +${gain} Arcane (${types.size} types).`,'g');
   }},
-  {id:'ar8',el:'ar',name:'Harmonic Surge',icon:'🜀',desc:'For every 4 nodes on the board, all nodes gain +5% output for this run.',cost:700,apply:r=>{
+  {id:'ar8',el:'ar',name:'Harmonic Surge',icon:'🜀',desc:'For every 4 nodes on the board, all nodes gain +5% output for this run.',cost:ARCANE_CARD_COST,apply:r=>{
     const bonus=Math.floor(r.placedNodes.length/4)*0.05;
     r._harmonicSurge=(r._harmonicSurge||0)+bonus;
     log(`Harmonic Surge: +${Math.round(bonus*100)}% from ${r.placedNodes.length} nodes.`,'g');
   }},
-  {id:'ar9',el:'ar',name:'Transfiguration',icon:'🜀',desc:'For every 10 AU owned, all nodes gain +5% output for this run.',cost:700,apply:r=>{
+  {id:'ar9',el:'ar',name:'Transfiguration',icon:'🜀',desc:'For every 10 AU owned, all nodes gain +5% output for this run.',cost:ARCANE_CARD_COST,apply:r=>{
     const bonus=Math.floor(META.au/10)*0.05;
     r._transmutation=(r._transmutation||0)+bonus;
     log(`Transfiguration: +${Math.round(bonus*100)}% from ${Math.floor(META.au)} AU.`,'g');
@@ -2105,7 +2096,13 @@ function pickCards(){
     }
     return (w[c.el]||0)>0.05;
   }).map(c=>({el:c.el,pool:[c.id],w:w[c.el]*(c.tri?2.0:1.2),isCombined:true}));
-  const avail=[...Object.entries(POOLS).filter(([el])=>el!=='shop').map(([el,pool])=>({el,pool:pool.filter(id=>{const c=CARDS.find(x=>x.id===id);if(c&&(c.temporary||c.isShop)){if(id==='tmp6'&&(!R||R.cycle<10))return false;return true;}return !uid.includes(id);}),w:w[el]||0})).filter(a=>a.pool.length>0),...combinedAvail];
+  // Base-element cards only surface when that element is in play this run (board or inventory,
+  // including combined nodes that inherit it) — no Ventus cards for a board without Ventus.
+  const runEls=R?[...R.placedNodes.map(n=>n.el),...R.inventory.map(i=>i.el||i)]:[];
+  const elInPlay=el=>!R||runEls.some(e=>e===el||(COMBINED_PARENTS[e]||[]).includes(el));
+  const avail=[...Object.entries(POOLS).filter(([el])=>el!=='shop'&&(!['ig','tr','vt','aq'].includes(el)||elInPlay(el))).map(([el,pool])=>({el,pool:pool.filter(id=>{const c=CARDS.find(x=>x.id===id);if(c&&(c.temporary||c.isShop)){if(id==='tmp6'&&(!R||R.cycle<10))return false;return true;}return !uid.includes(id);}),w:w[el]||0})).filter(a=>a.pool.length>0),...combinedAvail];
+  // A gated-off pool (weight 0, e.g. Arcane cards outside their gate) must not ride the flat +0.08 floor below
+  for(let i=avail.length-1;i>=0;i--)if(avail[i].el==='ar'&&!(avail[i].w>0))avail.splice(i,1);
   if(!avail.length)return[];
   const picked=[],used=new Set();
   for(let i=0;i<META.offerSlots&&avail.length>0;i++){
@@ -2363,7 +2360,7 @@ function hexRgb(hex){
 function rgbaHex(hex,a){const c=hexRgb(hex);return `rgba(${c.r},${c.g},${c.b},${a})`;}
 function channelLinkKey(na,nb,kind){
   const k=(a,b)=>`${a.q},${a.r}|${b.q},${b.r}`;
-  return (na.q<b.q||(na.q===b.q&&na.r<=b.r)?k(na,nb):k(nb,na))+'|'+kind;
+  return (na.q<nb.q||(na.q===nb.q&&na.r<=nb.r)?k(na,nb):k(nb,na))+'|'+kind;
 }
 function drawChannelLink(ctx,ax,ay,bx,by,opt={}){
   const intensity=Math.min(1,Math.max(0,opt.intensity??0.5));
@@ -2533,6 +2530,20 @@ function drawBoard(){
     if(NODE_DEFS[n.el].combined)drawCombinedNodeDiamond(boardCtx,x,y,n.el,n);
     else drawNodeDiamond(boardCtx,x,y,n.el,n);
   });}
+  // Enchantment — keep the traitor visibly marked for the whole lesson
+  if(R&&R._traitorNode&&R.placedNodes.includes(R._traitorNode)){
+    const tn=R._traitorNode,{x,y}=gridToPixel(tn.q,tn.r),cz=CELL*view.zoom;
+    const hwR=cz*0.52*1.18,hhR=cz*0.36*1.18,pulse=0.5+0.5*Math.sin((Date.now()%900)/900*Math.PI*2);
+    boardCtx.save();
+    boardCtx.setLineDash([5*view.zoom,4*view.zoom]);
+    boardCtx.strokeStyle='#e05050';boardCtx.globalAlpha=0.55+pulse*0.4;boardCtx.lineWidth=2*view.zoom;
+    boardCtx.shadowColor='#e05050';boardCtx.shadowBlur=10;
+    boardCtx.beginPath();boardCtx.moveTo(x,y-hhR);boardCtx.lineTo(x+hwR,y);boardCtx.lineTo(x,y+hhR);boardCtx.lineTo(x-hwR,y);boardCtx.closePath();boardCtx.stroke();
+    boardCtx.setLineDash([]);boardCtx.shadowBlur=0;boardCtx.globalAlpha=1;
+    boardCtx.font=`${Math.round(cz*0.16)}px serif`;boardCtx.fillStyle='#e05050';boardCtx.textAlign='center';boardCtx.textBaseline='middle';
+    boardCtx.fillText('⚠',x+hwR*0.72,y-hhR*0.72);
+    boardCtx.restore();
+  }
   // Highlight rings for affected nodes (card hover)
   if(R&&((_highlightEls&&_highlightEls.size>0)||(_highlightNodes&&_highlightNodes.size>0))){
     const t=(Date.now()%1200)/1200;
@@ -3224,7 +3235,9 @@ function finishDragDrop(){
   const el=dragState.el;
   if(dragState.snapQ!==null){
     if(dragState.fromBoard){
-      R.placedNodes.push({...dragState.fromNode,q:dragState.snapQ,r:dragState.snapR});
+      // Move the same object (not a copy) so references like the Enchantment traitor survive repositioning
+      const moved=dragState.fromNode;moved.q=dragState.snapQ;moved.r=dragState.snapR;
+      R.placedNodes.push(moved);
       log(`${NODE_DEFS[el].name} moved.`,'g');
     }
     else placeNode(el,dragState.snapQ,dragState.snapR);
@@ -3396,7 +3409,24 @@ function updInventoryUI(){
 // ═══════════════════════════════════════════
 // NODE TAPPING
 // ═══════════════════════════════════════════
-function tapNode(node){
+// Enchantment — clicking the traitor empowers the NEXT normal pulse ×1.3 per click (consumed in firePulse)
+function triggerTraitor(node){
+  if(!R||!R._traitorNode||node!==R._traitorNode)return false;
+  R._traitorPulseMult=(R._traitorPulseMult||1)*1.3;
+  flt(node,'⚠ Traitor!','#e05050');
+  log(`Enchantment: traitor activated — next pulse empowered ×${R._traitorPulseMult.toFixed(2)}!`,'w');
+  updPulse();
+  return true;
+}
+// Transmutation lesson — returns the node a click on `node` should actually work
+function transmuteTarget(node){
+  const map=R&&R._transmutationMap;if(!map)return node;
+  const to=map[node.el];if(!to||to===node.el)return node;
+  let best=null,bd=Infinity;
+  R.placedNodes.forEach(n=>{if(n.el!==to)return;const d=Math.max(Math.abs(n.q-node.q),Math.abs(n.r-node.r));if(d<bd){bd=d;best=n;}});
+  return best||node;
+}
+function tapNode(node,remapped){
   if(!R||R.dead||R.selecting||R.paused||R.placing)return;
   if(node.el==='ar'){flt(node,`α ${getObservedNodes(node).length} observed`,NODE_DEFS.ar.colorMid);return;}
   if(node.el==='mirror'){flt(node,'◈ Mirror','#c090f0');return;}
@@ -3405,15 +3435,10 @@ function tapNode(node){
     flt(node,'✕ Null Zone','#400830');return;
   }
   // Enchantment — traitor node boosts next pulse on interaction
-  if(R._traitorNode&&node===R._traitorNode){
-    R.pulse_dmg=Math.round(R.pulse_dmg*1.3);
-    flt(node,'⚠ Traitor!','#e05050');
-    log('Enchantment: traitor activated — next pulse empowered!','w');
-    return;
-  }
-  // Transmutation — remap which node interaction fires
-  const elRaw=node.el;
-  const el=R._transmutationMap?R._transmutationMap[elRaw]||elRaw:elRaw;
+  if(triggerTraitor(node))return;
+  // Transmutation — this click works a different node (nearest of the remapped element)
+  if(!remapped){const t=transmuteTarget(node);if(t!==node)return NODE_DEFS[t.el]?.combined?tapCombinedNode(t,true):tapNode(t,true);}
+  const el=node.el;
   const amp=genAmp(el),lvm=lvMult(getEffectiveLv(el));
   const flags=R.cardFlags[el]||{};
   const s=node.state;
@@ -3526,8 +3551,10 @@ function tapNode(node){
   R.cyc_gen+=g;R._outAccum[el]=(R._outAccum[el]||0)+g;updCyc();
 }
 
-function tapCombinedNode(node){
+function tapCombinedNode(node,remapped){
   if(!R||R.dead||R.selecting||R.paused||R.placing)return;
+  if(triggerTraitor(node))return;
+  if(!remapped){const t=transmuteTarget(node);if(t!==node)return NODE_DEFS[t.el]?.combined?tapCombinedNode(t,true):tapNode(t,true);}
   const el=node.el,s=node.state,amp=genAmp(node.el);
   const lv=META.nodeLevels[el]||1,lvm=lvMult(lv);
   let g=0;
@@ -3638,7 +3665,6 @@ function addArc(v){
   if(R.stats&&v>0)R.stats.arcGen+=v;
   updArcUI();
 }
-function hasEl(el){return R&&R.placedNodes.some(n=>n.el===el);}
 
 function arcaneAutoIgnis(node,eff){
   const s=node.state;if(!s||s.overloaded)return;
@@ -3777,7 +3803,7 @@ function step(dt){
       addArc(yield_);META.au=Math.round((META.au+auGain)*100)/100;
       s.stored=0;s._unharvTime=0;
       if(trF._sedimentLayers&&(s._overflow||0)>0){s.stored=s._overflow;s._overflow=0;}
-      document.getElementById('tau').textContent=META.au;
+      document.getElementById('tau').textContent=Math.floor(META.au);
       flt(n,`⛰ Auto +${Math.round(yield_)}`,'#a87848');
     }
     // Sediment disturbance — stored decays passively
@@ -4080,8 +4106,10 @@ function firePulse(){
   bumpCombinedAch('sl',20);
   bumpCombinedAch('an',50);
   bumpCombinedAch('ae',100);
-  const raw=R.pulse_dmg*(1+R.cycle*0.18)*(1-(R._gradPulseReduction||0))*(META.crucibleActive?1.5:1.0);
-  let mit=R._stackedMit||getNodeMit();
+  // Crucible's ×1.5 is already baked into R.pulse_dmg (PULSE_DMG_CRUCIBLE); Enchantment traitor clicks empower this pulse only
+  const raw=R.pulse_dmg*(1+R.cycle*0.18)*(1-(R._gradPulseReduction||0))*(R._traitorPulseMult||1);
+  R._traitorPulseMult=1;
+  let mit=R._stackedMit??0; // 0 is a real value (no Aqua on board) — don't fall back to Aqua's 18%
   if(R.cardFlags.aq._under&&R.arc/R.arcMax<0.25)mit=Math.min(.8,mit*1.5);
   // Attenuation — flat damage reduction + Arcanum Constitution
   const arMit=getArcaneMitBonus();
@@ -4255,7 +4283,9 @@ function firePulse(){
   log(`Pulse −${Math.round(dmg)} Arcane`,'d');
   const escInterval=R.cycle>=15?2:3;
   if(R.pulse_n%escInterval===0)R.pulse_dmg=Math.round(R.pulse_dmg*1.12);
-  const pct=R.arc/R.arcMax;R.pulse_base=pct<0.25?3.5:pct<0.5?5.0:7.5;
+  // Low-Arcane pressure speeds pulses up; scale from the mode's base interval so Crucible stays faster
+  const baseInt=META.crucibleActive?5.5:7.5;
+  const pct=R.arc/R.arcMax;R.pulse_base=baseInt*(pct<0.25?3.5/7.5:pct<0.5?5.0/7.5:1);
   if(R.arc<=0)endRun(true);
 }
 
@@ -4309,12 +4339,6 @@ function disturbanceSev(id){
   return R._gradDisturbanceDouble?Math.min(base*2,1.0):base;
 }
 function hasDisturbance(id){return R&&R.disturbances&&(R.disturbances[id]||0)>0;}
-function distVal(base,reduced,unit=''){
-  const b=typeof base==='number'?Math.round(base*10)/10:base;
-  const r=typeof reduced==='number'?Math.round(reduced*10)/10:reduced;
-  if(b===r)return `${b}${unit}`;
-  return `<span style="color:var(--text-dim);text-decoration:line-through;">${b}${unit}</span> <span style="color:#e05050;font-weight:600;">${r}${unit}</span>`;
-}
 // cardVal — shows base value, then boosted value in green if a card is active
 function cardVal(base,boosted,unit=''){
   const b=typeof base==='number'?Math.round(base*10)/10:base;
@@ -4382,8 +4406,11 @@ const LESSON_DEFS={
     init(r){
       const target=1000+r.cycle*100;
       r._lessState={target,generated:0};
-      // Scramble: ig→tr, tr→vt, vt→aq, aq→ig
-      r._transmutationMap={ig:'tr',tr:'vt',vt:'aq',aq:'ig',vp:'ci',sl:'an',an:'vp',ci:'sl',fe:'gl',gl:'fe'};
+      // Scramble: each clicked node works the nearest node of the NEXT element in the loop (ig→tr→vt→aq→ig),
+      // built from what's on the board so every placed node stays reachable. Clickable combined nodes rotate likewise.
+      const onBoard=els=>els.filter(el=>r.placedNodes.some(n=>n.el===el));
+      const loop=els=>Object.fromEntries(els.map((el,i)=>[el,els[(i+1)%els.length]]));
+      r._transmutationMap={...loop(onBoard(['ig','tr','vt','aq'])),...loop(onBoard(['vp','sl','an','ci','gl']))};
       document.getElementById('board-lesson-tint').style.background='rgba(120,60,200,.06)';
       log(`Transmutation: generate ${target} Arcane with scrambled controls.`,'g');
     },
@@ -4667,7 +4694,7 @@ function stepLessons(dt){
     // Track lesson completion in META for win condition (capture first-time mastery before pushing)
     const wasNewMastery=!META.lessonsCompleted.includes(ls.id);
     if(wasNewMastery)META.lessonsCompleted.push(ls.id);
-    document.getElementById('tau').textContent=META.au;
+    document.getElementById('tau').textContent=Math.floor(META.au);
     document.getElementById('gp').textContent=`${Math.round(R.grad)}%`;
     document.getElementById('gf').style.width=`${R.grad}%`;
     log(`✦ Lesson complete: ${ls.def.name}! +${auReward} AU · Graduation: ${Math.round(R.grad)}%`,'g');
@@ -4807,7 +4834,7 @@ const GRAD_CHALLENGE_DEFS={
       if(gs.elapsed>=gs.duration){r._gradState=null;drawBoard();return 'win';}
       if(r.arc<=0){r._gradState=null;drawBoard();endRun(true);return 'dead';}
     },
-    progressText(gs){return `${Math.round(gs.elapsed)}s / 60s · Null zones: ${gs.nullSet.size}`;}
+    progressText(gs){return `${Math.round(gs.elapsed)}s / ${gs.duration}s · Null zones: ${gs.nullSet.size}`;}
   },
   arcane:{
     name:'Reckoning of Curses',element:'ar',color:'#b870e8',
@@ -4835,9 +4862,9 @@ const GRAD_CHALLENGE_DEFS={
 
 // Graduation reward pool
 const GRAD_REWARDS=[
-  {id:'au15',name:'15 AU',icon:'✦',desc:'Immediately grant 15 AU.',apply(r){META.au+=15;document.getElementById('tau').textContent=META.au;log('+15 AU reward.','g');}},
-  {id:'au25',name:'25 AU',icon:'✦✦',desc:'Immediately grant 25 AU.',apply(r){META.au+=25;document.getElementById('tau').textContent=META.au;log('+25 AU reward.','g');}},
-  {id:'au40',name:'40 AU',icon:'✦✦✦',desc:'Immediately grant 40 AU.',apply(r){META.au+=40;document.getElementById('tau').textContent=META.au;log('+40 AU reward.','g');}},
+  {id:'au15',name:'15 AU',icon:'✦',desc:'Immediately grant 15 AU.',apply(r){META.au+=15;document.getElementById('tau').textContent=Math.floor(META.au);log('+15 AU reward.','g');}},
+  {id:'au25',name:'25 AU',icon:'✦✦',desc:'Immediately grant 25 AU.',apply(r){META.au+=25;document.getElementById('tau').textContent=Math.floor(META.au);log('+25 AU reward.','g');}},
+  {id:'au40',name:'40 AU',icon:'✦✦✦',desc:'Immediately grant 40 AU.',apply(r){META.au+=40;document.getElementById('tau').textContent=Math.floor(META.au);log('+40 AU reward.','g');}},
   {id:'igSurge',name:'Ignis Surge',icon:'🜂',desc:'All Ignis-type nodes gain +1 level this run.',apply(r){const els=['ig','vp','fe','an','im','ae','ju'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Ignis Surge: all Ignis-type nodes +1 level this run.','g');}},
   {id:'trSurge',name:'Terra Surge',icon:'🜃',desc:'All Terra-type nodes gain +1 level this run.',apply(r){const els=['tr','sl','fe','ci','im','ae','ce'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Terra Surge: all Terra-type nodes +1 level this run.','g');}},
   {id:'vtSurge',name:'Ventus Surge',icon:'🜁',desc:'All Ventus-type nodes gain +1 level this run.',apply(r){const els=['vt','vp','ci','gl','im','ju','ce'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Ventus Surge: all Ventus-type nodes +1 level this run.','g');}},
@@ -5424,7 +5451,7 @@ function consume(t){
     const btn=document.getElementById('btn-cln');if(btn){btn.style.color='#50e08a';setTimeout(()=>{btn.style.color='';},600);}
   }
   else{log('Not enough AU.','w');return;}
-  document.getElementById('tau').textContent=META.au;
+  document.getElementById('tau').textContent=Math.floor(META.au);
   updCleanseBtn();
 }
 
@@ -5720,6 +5747,7 @@ function beginRun(){
   hideCoachBlurb(document.getElementById('run-coach-blurb'));
   hideCoachBlurb(document.getElementById('hub-coach-slot'));
   R=freshRun();
+  const logEl=document.getElementById('log');if(logEl)logEl.innerHTML=''; // fresh log per run
   R.arcMax=getRunArcMaxBase();
   // Equipped snapshot's dominant element grants a slight gen bonus (placeholder; tuned in economy pass)
   R._domEl=META.equippedSnapshot?snapshotDominant(getEquippedTend()):null;
@@ -5727,7 +5755,7 @@ function beginRun(){
   // Seed unlockedCards (active-this-run) from the equipped loadout
   META.unlockedCards=(META.equippedCards||[]).map(id=>CARDS.find(x=>x.id===id)).filter(Boolean);
   document.getElementById('tc').textContent=1;document.getElementById('cv').textContent=1;
-  document.getElementById('tau').textContent=META.au;
+  document.getElementById('tau').textContent=Math.floor(META.au);
   document.getElementById('gp').textContent=`${Math.round(R.grad)}%`;document.getElementById('gf').style.width=`${R.grad}%`;
   document.getElementById('clist').innerHTML='<div style="font-size:16px;color:var(--text-lo)">Complete a Cycle to discover cards.</div>';
   updCardList();updArcUI();updCyc();
@@ -5944,7 +5972,7 @@ function renderForgeDiscoveryList(){
       </div>
       <div class="forge-disc-bar"><div class="forge-disc-fill" style="width:${pct}%;"></div></div>
       <div style="font-size:13px;color:var(--text-lo);margin-top:5px;line-height:1.5;">
-        Runs ${prog.runsWithParents||0}/${req.runsNeeded} · ${req.achLabel} ${prog.achievement||0}/${req.achNeeded}
+        Cycles ${prog.runsWithParents||0}/${req.runsNeeded} · ${req.achLabel} ${prog.achievement||0}/${req.achNeeded}
       </div>
     </div>`;
   }).join('');
@@ -6150,7 +6178,7 @@ function applyRecSecStates(){
 }
 function updHubUI(){
   applyRecSecStates();
-  document.getElementById('hub-au').textContent=META.au;
+  document.getElementById('hub-au').textContent=Math.floor(META.au);
   document.getElementById('h-runs').textContent=META.runs;
   document.getElementById('h-best').textContent=META.bestCycle||'—';
   document.getElementById('h-grad').textContent=META.grads;
@@ -6401,7 +6429,6 @@ function refreshHub(){
   if(typeof renderHubInventory==='function')renderHubInventory();
   if(typeof drawHubBoard==='function')drawHubBoard();
   if(typeof renderForgePage==='function')renderForgePage();
-  if(typeof renderHubConsumeList==='function')renderHubConsumeList();
   if(typeof drawRecordTrend==='function')drawRecordTrend();
   if(typeof renderLessonMastery==='function')renderLessonMastery();
   if(typeof renderForgeSide==='function')renderForgeSide();
@@ -6422,34 +6449,7 @@ function hubBuyNode(el){
   if(el==='aq')setTimeout(()=>tutCheckTrigger('aqua-bought'),100);
   refreshHub();autoSave();
 }
-function renderHubConsumeList(){
-  const con=document.getElementById('hub-consume-list');if(!con)return;
-  // All owned node types with at least 1 owned
-  const consumable=Object.entries(META.nodeOwned).filter(([el,owned])=>{
-    if(!NODE_DEFS[el])return false;
-    if(owned<=0)return false;
-    if(NODE_DEFS[el].combined&&!META.unlockedCombined.includes(el))return false;
-    return true;
-  });
-  if(!consumable.length){con.innerHTML='<div class="empty-note">No nodes available to consume.</div>';return;}
-  con.innerHTML='';
-  consumable.forEach(([el,owned])=>{
-    const def=NODE_DEFS[el];
-    const gain=getNodeConsumeGain(el);
-    const div=document.createElement('div');div.className='shop-row';
-    div.innerHTML=`
-      <div class="shop-row-info">
-        <div class="shop-row-name">${def.icon} ${def.name}</div>
-        <div class="shop-row-sub">Owned: ${owned} · +${gain} Arcane threshold</div>
-      </div>
-      <div class="shop-row-btn consume" onclick="hubConsumeNode('${el}')">Consume</div>`;
-    con.appendChild(div);
-  });
-}
 
-function hubConsumeNode(el){
-  if(consumeOwnedNode(el,false))refreshHub();
-}
 function toggleCrucible(){
   if(!META.crucibleUnlocked)return;
   META.crucibleActive=!META.crucibleActive;
@@ -6635,7 +6635,7 @@ function setupHubBoardSystem(){
           const flog=document.getElementById('hub-furnace-log');
           if(flog){flog.textContent=`${NODE_DEFS[el].name} consumed · +${gain} threshold (total bonus +${META.arcMaxBonus})`;flog.style.color='#ff8040';}
           setTimeout(()=>{if(flog){flog.textContent='Base +25 · Combined +100 · Arcane +500';flog.style.color='var(--gold)';}},3000);
-          updHubUI();renderHubConsumeList();
+          updHubUI();
         }
         hubDragState={active:false,node:null,snapQ:null,snapR:null,fromInv:null,fromBoard:false};
         hubDragGhost.style.display='none';
@@ -6813,7 +6813,6 @@ function moveHubGhost(cx,cy){
   if(hubDragGhost){hubDragGhost.style.left=`${cx-22}px`;hubDragGhost.style.top=`${cy-22}px`;}
 }
 
-function toggleHubBoardEdit(){} // kept for backwards compat, now a no-op
 function getHubBoardNodeAt(cv,px,py){
   if(!META.lastBoard.length)return null;
   const{cx,cy,cellZ}=getHubBoardTransform(cv);
@@ -6899,16 +6898,6 @@ function getAffectedNodeEls(el){
     if(def.combined&&def.els&&def.els.includes(el))s.add(k);
   });
   return s;
-}
-function getAffectedNodes(el){
-  // Returns node names affected by this element's card bonus (element + combined children via inheritance)
-  if(el==='ar')return['All nodes (board-level)'];
-  const affected=[NODE_DEFS[el]?.name].filter(Boolean);
-  // Combined nodes that inherit this element as a parent
-  Object.entries(NODE_DEFS).forEach(([k,def])=>{
-    if(def.combined&&def.els&&def.els.includes(el))affected.push(def.name);
-  });
-  return affected;
 }
 function setupRecordTooltips(){
   // Hub card hover tooltip removed — it only repeated the card face (no board highlight applies in the hub).
@@ -7019,8 +7008,8 @@ function updArcUI(){
 }
 function getNormalPulseDmgEst(){
   if(!R)return 0;
-  const raw=R.pulse_dmg*(1+R.cycle*0.18)*(1-(R._gradPulseReduction||0))*(META.crucibleActive?1.5:1.0);
-  let mit=R._stackedMit||getNodeMit();
+  const raw=R.pulse_dmg*(1+R.cycle*0.18)*(1-(R._gradPulseReduction||0))*(R._traitorPulseMult||1);
+  let mit=R._stackedMit??0;
   if(R.cardFlags.aq._under&&R.arc/Math.max(1,R.arcMax)<0.25)mit=Math.min(.8,mit*1.5);
   mit=Math.min(0.95,mit+(R._attenuation||0)+getArcaneMitBonus());
   mit=Math.max(0,mit*(1-disturbanceSev('ebbing')));
@@ -7180,59 +7169,8 @@ function log(msg,t='n'){
 }
 
 // ═══════════════════════════════════════════
-// TREE
+// SHARED UI STATE (board highlights, card filters, cheats)
 // ═══════════════════════════════════════════
-const treeView={x:0,y:0,zoom:1.0,minZoom:0.4,maxZoom:2.5,dragging:false,startX:0,startY:0,startPanX:0,startPanY:0};
-function setupTreePanZoom(cv){
-  if(!cv||cv._pvSetup)return;cv._pvSetup=true;
-  cv.addEventListener('mousedown',e=>{treeView.dragging=true;treeView.startX=e.clientX;treeView.startY=e.clientY;treeView.startPanX=treeView.x;treeView.startPanY=treeView.y;cv.style.cursor='grabbing';});
-  cv.addEventListener('mousemove',e=>{if(!treeView.dragging)return;treeView.x=treeView.startPanX+(e.clientX-treeView.startX);treeView.y=treeView.startPanY+(e.clientY-treeView.startY);drawTree();});
-  cv.addEventListener('mouseup',()=>{treeView.dragging=false;cv.style.cursor='grab';});
-  cv.addEventListener('mouseleave',()=>{treeView.dragging=false;cv.style.cursor='grab';});
-  cv.addEventListener('wheel',e=>{
-    e.preventDefault();const delta=e.deltaY>0?-0.08:0.08;const newZoom=Math.max(treeView.minZoom,Math.min(treeView.maxZoom,treeView.zoom+delta));
-    const rect=cv.getBoundingClientRect();const mx=e.clientX-rect.left,my=e.clientY-rect.top;const scale=newZoom/treeView.zoom;
-    treeView.x=mx-scale*(mx-treeView.x);treeView.y=my-scale*(my-treeView.y);treeView.zoom=newZoom;drawTree();
-  },{passive:false});
-}
-function getTreeDefs(){
-  const cx=360,cy=280,bl=82;
-  const branches={
-    tr:{angle:-Math.PI/2,color:'#c07828',colorMid:'#e8a850',colorDim:'#382008',cards:['tr1','tr2','tr3','tr4']},
-    vt:{angle:0,color:'#48a838',colorMid:'#80d860',colorDim:'#102808',cards:['vt1','vt2','vt3','vt4']},
-    aq:{angle:Math.PI,color:'#2870c0',colorMid:'#58a8e8',colorDim:'#081828',cards:['aq1','aq2','aq3','aq4']},
-    ig:{angle:Math.PI/2,color:'#e03828',colorMid:'#ff7055',colorDim:'#380e08',cards:['ig1','ig2','ig3','ig4']},
-    ar:{angle:Math.PI/4,color:'#8040b0',colorMid:'#b870e8',colorDim:'#200830',cards:['ar1','ar2','ar3']},
-  };
-  const nodes=[];
-  Object.entries(branches).forEach(([el,b])=>{
-    const len=el==='ar'?58:bl;
-    b.cards.forEach((cid,i)=>{
-      const card=CARDS.find(c=>c.id===cid)||{id:cid,name:'???',desc:'',icon:'✦',cost:0};
-      nodes.push({id:cid,el,x:cx+Math.cos(b.angle)*(i+1)*len,y:cy+Math.sin(b.angle)*(i+1)*len,i,card,branch:b});
-    });
-  });
-  return{nodes,cx,cy,branches};
-}
-function getNodeState(nid){
-  const uid=META.ownedCards.map(o=>o.id);if(uid.includes(nid))return'unlocked';
-  const proj=getProjectedNodes();if(proj.includes(nid))return'projected';
-  const{nodes}=getTreeDefs();const node=nodes.find(n=>n.id===nid);if(!node)return'locked';
-  if(node.i===0)return'available';
-  const prev=nodes.find(n=>n.el===node.el&&n.i===node.i-1);
-  if(prev&&uid.includes(prev.id))return'available';
-  return'locked';
-}
-function getProjectedNodes(){
-  const uid=META.ownedCards.map(o=>o.id);const{nodes}=getTreeDefs();
-  const w=cardWeights();// uses equipped snapshot
-  const sorted=Object.entries(w).filter(([k])=>k!=='ar').sort((a,b)=>b[1]-a[1]).slice(0,2);
-  const proj=[];
-  sorted.forEach(([el])=>{const branch=nodes.filter(n=>n.el===el).sort((a,b)=>a.i-b.i);for(const n of branch){if(!uid.includes(n.id)){proj.push(n.id);break;}}});
-  return proj;
-}
-let treeHover=null;
-let _trackerEntries=[];
 let _highlightEls=new Set();
 let _highlightNodes=new Set(); // specific placed nodes (adjacency tray hover)
 let cheatsActive=false;
@@ -7242,116 +7180,6 @@ function setCardFilter(f){
   _cardFilter=f;
   document.querySelectorAll('#card-filter-bar .card-filter-chip[data-filter]').forEach(c=>c.classList.toggle('active',c.dataset.filter===f));
   updHubUI();
-}
-function setCardSort(s){
-  _cardSort=s;
-  document.querySelectorAll('#card-filter-bar .card-filter-chip[data-sort]').forEach(c=>c.classList.toggle('active',c.dataset.sort===s));
-  updHubUI();
-}
-function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
-function drawTree(){
-  // Repurposed: last-run tendency trajectory line graph (+ combined-node discovery panel overlay)
-  const cv=document.getElementById('tree-canvas');if(!cv)return;
-  const w=cv.clientWidth,h=cv.clientHeight;
-  if(!w||!h||w<10||h<10){requestAnimationFrame(drawTree);return;}
-  if(cv.width!==w)cv.width=w;if(cv.height!==h)cv.height=h;
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,w,h);
-  // Trajectory graph moved to the Record tab (drawRecordTrend). This canvas hosts the discovery panel.
-  if(!(META.runs>=2)||META._discoveryCollapsed){
-    ctx.textAlign='left';ctx.font='16px Cinzel,serif';ctx.fillStyle='rgba(255,255,255,.65)';
-    ctx.fillText(!(META.runs>=2)?'Complete a couple of runs to begin discovering combined nodes.':'Discovery panel hidden.',20,30);
-  }
-
-  // Combined node discovery trackers — show after run 2 (collapsible)
-  _trackerEntries=[];
-  if(META.runs>=2 && !META._discoveryCollapsed){
-    const panelW=270,barW=panelW-8,px=20;
-    let py=16;
-    ctx.save();
-    const entries=Object.entries(COMBINED_REQS).filter(([el])=>!META.unlockedCombined.includes(el));
-    const rowH=54;
-    const panelH=entries.length*rowH+46;
-    ctx.fillStyle='rgba(0,0,0,.62)';
-    roundRect(ctx,px-10,py-10,panelW+18,panelH,6);ctx.fill();
-    ctx.strokeStyle='rgba(200,164,72,.22)';ctx.lineWidth=1.5;ctx.stroke();
-    ctx.font='18px Cinzel,serif';ctx.fillStyle='rgba(200,164,72,.95)';ctx.textAlign='left';
-    ctx.fillText('DISCOVERY PROGRESS',px,py+8);py+=23;
-    ctx.font='14px Cinzel,serif';ctx.fillStyle='rgba(255,255,255,.7)';
-    ctx.fillText('Place parent nodes touching each other to progress.',px,py+8);py+=22;
-    entries.forEach(([el,req])=>{
-      const prog=META.combinedProgress[el]||{runsWithParents:0,achievement:0};
-      const def=NODE_DEFS[el];if(!def)return;
-      _trackerEntries.push({el,req,prog,def,x:px-10,y:py-8,w:panelW+18,h:rowH-6});
-      ctx.font='19px Cinzel,serif';ctx.fillStyle=def.colorMid||def.color;ctx.textAlign='left';
-      ctx.fillText(`${def.icon} ${def.name}`,px,py);
-      // Runs bar
-      const runPct=Math.min(1,(prog.runsWithParents||0)/req.runsNeeded);
-      ctx.fillStyle='rgba(255,255,255,.10)';ctx.fillRect(px,py+6,barW,7);
-      ctx.fillStyle=def.color+'dd';ctx.fillRect(px,py+6,barW*runPct,7);
-      ctx.font='14px Cinzel,serif';ctx.fillStyle='rgba(255,255,255,.8)';ctx.textAlign='right';
-      ctx.fillText(`${prog.runsWithParents||0}/${req.runsNeeded} cycles`,px+barW-3,py+12);
-      // Achievement bar
-      const achPct=Math.min(1,(prog.achievement||0)/req.achNeeded);
-      ctx.fillStyle='rgba(255,255,255,.10)';ctx.fillRect(px,py+18,barW,7);
-      ctx.fillStyle=def.colorMid+'bb';ctx.fillRect(px,py+18,barW*achPct,7);
-      ctx.font='14px Cinzel,serif';ctx.fillStyle='rgba(255,255,255,.75)';ctx.textAlign='right';
-      ctx.fillText(`${prog.achievement||0}/${req.achNeeded} ${req.achLabel}`,px+barW-3,py+24);
-      py+=rowH;
-    });
-    ctx.restore();
-  }
-}
-let graphView={zoom:1,panX:0,dragging:false,startX:0,startPanX:0};
-function setupTreeHover(){
-  const cv=document.getElementById('tree-canvas');if(!cv||cv._hs)return;cv._hs=true;
-  cv.style.cursor='default';
-  const tt=document.getElementById('tree-tt');
-  const inGraph=(sx,sy)=>{const w=cv.clientWidth,h=cv.clientHeight;const padR=(META._discoveryCollapsed||!(META.runs>=2))?40:300;return sx>=54&&sx<=w-padR&&sy>=42&&sy<=h-40;};
-  // Wheel zoom (only over the graph area)
-  cv.addEventListener('wheel',e=>{
-    const rect=cv.getBoundingClientRect();const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
-    if(!inGraph(sx,sy))return;
-    e.preventDefault();
-    const old=graphView.zoom;
-    graphView.zoom=Math.max(1,Math.min(8,graphView.zoom*(e.deltaY>0?0.88:1.14)));
-    // keep cursor anchored horizontally
-    const gx=54;const f=(sx-gx-graphView.panX)/old;graphView.panX=sx-gx-f*graphView.zoom;
-    if(graphView.zoom<=1.001){graphView.zoom=1;graphView.panX=0;}
-    drawTree();
-  },{passive:false});
-  cv.addEventListener('mousedown',e=>{
-    const rect=cv.getBoundingClientRect();const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
-    if(graphView.zoom>1 && inGraph(sx,sy)){graphView.dragging=true;graphView.startX=e.clientX;graphView.startPanX=graphView.panX;cv.style.cursor='grabbing';}
-  });
-  window.addEventListener('mouseup',()=>{if(graphView.dragging){graphView.dragging=false;cv.style.cursor='default';}});
-  cv.addEventListener('mousemove',e=>{
-    const rect=cv.getBoundingClientRect();const sx=e.clientX-rect.left,sy=e.clientY-rect.top;
-    if(graphView.dragging){graphView.panX=graphView.startPanX+(e.clientX-graphView.startX);drawTree();return;}
-    // Discovery-panel tracker hover (graph itself is static, no node hover)
-    const hovered=_trackerEntries.find(t=>sx>=t.x&&sx<=t.x+t.w&&sy>=t.y&&sy<=t.y+t.h);
-    if(hovered){
-      const{el,req,prog,def}=hovered;
-      const parentNames=(req.parents||[]).map(p=>NODE_DEFS[p]?.name||p).join(' + ');
-      document.getElementById('tt-name').textContent=`${def.icon} ${def.name}`;
-      document.getElementById('tt-name').style.color=def.color;
-      document.getElementById('tt-desc').textContent=`Parents: ${parentNames}`;
-      document.getElementById('tt-state').innerHTML=
-        `<span style="color:${def.color}">${prog.runsWithParents||0}/${req.runsNeeded} cycles</span> · ` +
-        `<span style="color:${def.colorMid}">${prog.achievement||0}/${req.achNeeded} ${req.achLabel}</span>` +
-        `<div style="margin-top:5px;font-size:15px;color:var(--text-dim);font-style:italic;line-height:1.4;">${req.achLabel} only count while ${parentNames} are placed adjacent on the board during a run.</div>`;
-      tt.style.left=`${e.clientX-(tt.offsetWidth||220)-13}px`;tt.style.top=`${e.clientY-8}px`;tt.classList.add('show');
-    } else {
-      tt.classList.remove('show');
-      cv.style.cursor=(graphView.zoom>1&&inGraph(sx,sy))?'grab':'default';
-    }
-  });
-  cv.addEventListener('mouseleave',()=>{tt.classList.remove('show');});
-}
-function toggleDiscoveryPanel(){
-  META._discoveryCollapsed=!META._discoveryCollapsed;
-  const btn=document.getElementById('disc-toggle-btn');
-  if(btn)btn.textContent=META._discoveryCollapsed?'◄ Show discovery':'► Hide discovery';
-  drawTree();
 }
 
 // ═══════════════════════════════════════════
@@ -7412,7 +7240,7 @@ const GLOSSARY=[
    <div class="comp-sec"><div class="comp-h">How it works</div><p>Your hands-on burst generator. Each click releases a burst of Arcane that scales with the node's level. Clicking builds <b>Heat</b>; once Heat reaches 80, the Conflagration card chains bonus yield across your following clicks. Heat cools while idle, so Ignis rewards sustained, rhythmic clicking and carries the highest ceiling of any base node when worked actively.</p></div>
    <div class="comp-sec"><div class="comp-h">Amplified by</div><p>Ferrum nodes (multiply click yield), Forge Heat (a per-click stacking bonus), Eternal Flame (a permanent, growing bonus), and Tectonic (+30% while any Terra node holds a full stack). The global Amplify power and arcane bonuses apply on top.</p></div>
    <div class="comp-sec"><div class="comp-h">Synergies</div><p>Pair with <b>Ferrum</b> to multiply every click. Keep a <b>Terra</b> node maxed to trigger Tectonic across the whole board. Heat-retention and chaining cards extend Conflagration's reach.</p></div>
-   <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p><b>Flashfire</b> cuts click yield. <b>Smoldering</b> raises the Heat threshold, making Conflagration harder to ignite.</p></div>`,
+   <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p><b>Flashfire</b> cuts click yield. <b>Smoldering</b> lowers the overload threshold, so Ignis overloads sooner.</p></div>`,
    svg:`<svg viewBox="0 0 240 70"><circle cx="40" cy="35" r="18" fill="var(--ig-dim)" stroke="var(--ig-mid)"/><text x="40" y="40" fill="var(--ig-mid)" font-size="16" text-anchor="middle">♂</text><text x="150" y="32" fill="var(--text)" font-size="10" text-anchor="middle" font-family="Cinzel">click \u2192 burst</text><text x="150" y="48" fill="var(--text-dim)" font-size="8" text-anchor="middle" font-family="Cinzel">builds Heat \u2192 Conflagration</text></svg>`},
   {id:'comp-tr',cat:'Compendium',icon:'♄',title:'Terra',unlock:()=>(META.nodeOwned.tr||0)>0,
    body:`<div class="comp-role">Passive Accumulator</div>
@@ -7430,7 +7258,7 @@ const GLOSSARY=[
    svg:`<svg viewBox="0 0 240 70"><circle cx="40" cy="35" r="18" fill="var(--vt-dim)" stroke="var(--vt-mid)"/><text x="40" y="40" fill="var(--vt-mid)" font-size="16" text-anchor="middle">☿</text><rect x="95" y="24" width="90" height="16" rx="3" fill="var(--bg3)" stroke="var(--border)"/><rect x="150" y="24" width="20" height="16" rx="2" fill="var(--vt-mid)"/><text x="160" y="56" fill="var(--vt-mid)" font-size="8" text-anchor="middle" font-family="Cinzel">click the window</text></svg>`},
   {id:'comp-aq',cat:'Compendium',icon:'♆',title:'Aqua',unlock:()=>(META.nodeOwned.aq||0)>0,
    body:`<div class="comp-role">Mitigation + Trickle</div>
-   <div class="comp-sec"><div class="comp-h">How it works</div><p>Your shield. Aqua reduces incoming pulse drain (roughly 18% per node, scaling with level, capped at 80% total across all your Aqua nodes) and trickles a small amount of Arcane passively. Its own generation is low &mdash; its real value is <b>survival</b>, keeping your other generators' gains intact through escalating pulses.</p></div>
+   <div class="comp-sec"><div class="comp-h">How it works</div><p>Your shield. Aqua reduces incoming pulse drain (18% per node, raised by cards and Ventus adjacency, capped at 80% total across all your Aqua nodes) and trickles a small amount of Arcane passively. Its own generation is low &mdash; its real value is <b>survival</b>, keeping your other generators' gains intact through escalating pulses.</p></div>
    <div class="comp-sec"><div class="comp-h">Amplified by</div><p>Its trickle scales with Tidal Surge, Confluence Pull (more node-type variety on the board = more gen), Glassible Depths (a bonus while Arcane is low), Crystal Growth, Tectonic, Ceptus, and Surge.</p></div>
    <div class="comp-sec"><div class="comp-h">Synergies</div><p>Stack several Aqua to weather heavier pulses late in a run. Place adjacent to <b>Glacii</b>, which needs an Aqua neighbour to function. Generation cards make its trickle meaningful.</p></div>
    <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p><b>Ebbing</b> weakens its mitigation, <b>Stagnant</b> pauses its generation, and <b>Arcane Bleed</b> trims its output.</p></div>`,
@@ -7478,10 +7306,10 @@ const GLOSSARY=[
   {id:'comp-gl',cat:'Compendium',icon:'🜈',title:'Glacii',unlock:()=>(META.unlockedCombined||[]).includes('gl'),
    body:`<div class="comp-role">Crit-to-Buff</div>
    <div class="comp-sec"><div class="comp-h">Forged from</div><p>Ventus + Aqua</p></div>
-   <div class="comp-sec"><div class="comp-h">How it works</div><p>Air and water fused to ice. Glacii must sit <b>adjacent to an Aqua node</b> to function. A crit click crystallizes into a timed buff granting both mitigation and a board-wide passive generation bonus. Land the crit, reap a boost for the whole board.</p></div>
+   <div class="comp-sec"><div class="comp-h">How it works</div><p>Air and water fused to ice. A crit click crystallizes Glacii into a timed buff: extra pulse mitigation for the whole board, plus passive Arcane generation from Glacii itself while the crystal lasts. Each pulse shatters part of the remaining crystal time. Regular (non-crit) clicks only generate when Glacii sits <b>adjacent to an Aqua node</b>.</p></div>
    <div class="comp-sec"><div class="comp-h">Amplified by</div><p>Arcane bonuses, Amplify, and each adjacent Aqua (+50% click per neighbour).</p></div>
-   <div class="comp-sec"><div class="comp-h">Synergies</div><p>Place beside Aqua (required); its crystal buff lifts every node's passive gen &mdash; strong in passive-heavy builds.</p></div>
-   <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p><b>Arcane Bleed</b>; entirely inert without an Aqua neighbour.</p></div>`,
+   <div class="comp-sec"><div class="comp-h">Synergies</div><p>Place beside Aqua so its regular clicks pay out; time crits to keep the crystal's mitigation up through heavy pulses.</p></div>
+   <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p><b>Arcane Bleed</b>; without an Aqua neighbour only its crits do anything.</p></div>`,
    svg:`<svg viewBox="0 0 240 70"><circle cx="40" cy="35" r="18" fill="#081820" stroke="#78d8f0"/><text x="40" y="40" fill="#78d8f0" font-size="16" text-anchor="middle">🜈</text><text x="150" y="40" fill="var(--text-dim)" font-size="9" text-anchor="middle" font-family="Cinzel">crit → board buff</text></svg>`},
   {id:'comp-im',cat:'Compendium',icon:'🜒',title:'Impetus',unlock:()=>(META.unlockedCombined||[]).includes('im'),
    body:`<div class="comp-role">Charge &amp; Burst</div>
@@ -7510,7 +7338,7 @@ const GLOSSARY=[
   {id:'comp-ce',cat:'Compendium',icon:'🜐',title:'Ceptus',unlock:()=>(META.unlockedCombined||[]).includes('ce'),
    body:`<div class="comp-role">Reserve Booster</div>
    <div class="comp-sec"><div class="comp-h">Forged from</div><p>Terra + Ventus + Aqua (tri)</p></div>
-   <div class="comp-sec"><div class="comp-h">How it works</div><p>Builds a reserve from blocked and absorbed damage, growing to a cap that scales with level. Once the reserve is high enough, Ceptus boosts <b>all passive generation by +30%</b>. The more punishment you weather, the more your passive nodes produce.</p></div>
+   <div class="comp-sec"><div class="comp-h">How it works</div><p>Builds a reserve from pulse damage your mitigation blocks, up to a cap that scales with level. When the reserve fills it bursts into Arcane and boosts <b>passive generation by +30% for 5 seconds</b>, then starts refilling. The more punishment you weather, the more often it fires.</p></div>
    <div class="comp-sec"><div class="comp-h">Amplified by</div><p>Damage blocked over the run, and its level (which raises the reserve cap).</p></div>
    <div class="comp-sec"><div class="comp-h">Synergies</div><p>A passive-build keystone &mdash; its +30% lifts Terra, Salt, Anima, Aqua and more; pair with heavy mitigation to keep the reserve fed.</p></div>
    <div class="comp-sec"><div class="comp-h">Vulnerable to</div><p>Low-pulse early cycles give it little to feed on.</p></div>`,
@@ -7526,7 +7354,7 @@ const GLOSSARY=[
    svg:`<svg viewBox="0 0 240 60"><circle cx="50" cy="30" r="16" fill="var(--gold-dim)" stroke="var(--gold)"/><text x="50" y="34" fill="var(--gold)" font-size="10" text-anchor="middle" font-family="Cinzel">AU</text><path d="M70 30 H120" stroke="var(--gold)" stroke-width="1.5"/><text x="175" y="34" fill="var(--text-dim)" font-size="8" text-anchor="middle" font-family="Cinzel">spend in the Hub</text></svg>`},
   // ── Tips ──
   {id:'tip-chain',cat:'Tips',icon:'✦',title:'Chain Ignition',unlock:()=>true,
-   body:'The Chain Ignition card (Ignis pinnacle) fires a bonus burst when you click an Ignis node — but only while an Ignis-derived node that actually has a crit window is mid-crit. In practice that means Vapor or a crit-capable tri-node: Ferrum and Anima never enter crit, so they will not trigger it. To see it fire, click during an active Vapor or tri crit window.',
+   body:'The Chain Ignition card (Ignis pinnacle) fires a bonus burst when you click an Ignis node — but only while an Ignis-derived node that actually has a crit window is mid-crit. In practice that means Vapor — it is the only Ignis-derived node with a crit window (Ferrum, Anima and the tri-nodes never enter crit). To see it fire, click Ignis while a Vapor crit window is open.',
    svg:`<svg viewBox="0 0 240 60"><path d="M60 14 L48 34 H58 L50 48 L78 26 H66 L74 14 Z" fill="#ff7040"/><text x="152" y="34" fill="var(--text-dim)" font-size="8" text-anchor="middle" font-family="Cinzel">click during a derived crit</text></svg>`},
   {id:'tip-milestone',cat:'Tips',icon:'★',title:'Milestone Levels',unlock:()=>true,
    body:'A ★ on the Level-Up button of a node means the next level is a multiple of 5. Every 5th level grants a bonus generation multiplier on top of the usual per-level gain — so pushing a node to its next milestone gives an extra jump in output, not just a linear step. Worth prioritizing a node toward its next ★ when you can afford it.',
@@ -7613,7 +7441,7 @@ function renderKeepCards(cards){
     auEl.style.cssText='font-size:16px;color:var(--gold);font-family:Cinzel,serif;text-align:right;margin-top:6px;';
     section.appendChild(auEl);
   }
-  if(auEl)auEl.textContent=`Available: ${META.au} AU`;
+  if(auEl)auEl.textContent=`Available: ${Math.floor(META.au)} AU`;
 }
 
 function buyCard(cardId){
@@ -7635,7 +7463,7 @@ function buyCard(cardId){
   }
   // Update AU balance display
   const bal=document.getElementById('kc-au-balance');
-  if(bal)bal.textContent=`Available: ${META.au} AU`;
+  if(bal)bal.textContent=`Available: ${Math.floor(META.au)} AU`;
   // Update all cant states
   document.querySelectorAll('.kc-btn:not(.cant)').forEach(btn=>{
     const id=btn.closest('.keep-card')?.id?.replace('kc-','');
@@ -7733,28 +7561,7 @@ function drawRecordTrend(){
     ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillText(names[el],lx+13,ly+3);});
   ctx.font='12px Cinzel,serif';ctx.fillStyle='rgba(255,255,255,.6)';ctx.textAlign='right';ctx.fillText('C'+maxCycle,gx+gw,gy+gh+9);
 }
-function renderHubOwnedNodes(){
-  const con=document.getElementById('hub-owned-nodes');if(!con)return;
-  const rows=Object.entries(META.nodeOwned).map(([el,count])=>{
-    if(!count)return'';
-    const def=NODE_DEFS[el];
-    const lv=META.nodeLevels[el]||1;
-    return `<div style="display:flex;align-items:center;justify-content:space-between;font-size:16px;color:var(--text-dim);padding:2px 0;">
-      <span>${def.icon} ${def.name}</span>
-      <span style="color:var(--text);">×${count} <span style="color:var(--gold);font-family:'Cinzel',serif;font-size:15px;">${toRoman(lv)}</span></span>
-    </div>`;
-  }).join('');
-  con.innerHTML=rows||'<div class="empty-note">No nodes owned.</div>';
-}
 
-function renderHubOwnedCards(container){
-  const elc={ig:'hc-ig',tr:'hc-tr',vt:'hc-vt',aq:'hc-aq',ar:'hc-ar'};
-  if(!META.ownedCards.length){container.innerHTML='<div class="empty-note">No cards owned yet. Purchase discovered cards after a run.</div>';return;}
-  container.innerHTML=META.ownedCards.map(o=>{
-    const c=CARDS.find(x=>x.id===o.id);if(!c)return'';
-    return `<div class="hub-card ${elc[c.el]||''}"><div class="hc-name">${c.icon} ${c.name}</div><div class="hc-desc">${cn(c.desc)}</div></div>`;
-  }).join('');
-}
 // ═══════════════════════════════════════════
 // ═══════════════════════════════════════════
 // SAVE SYSTEM — 3 SLOTS
@@ -8034,10 +7841,7 @@ function saveCurrentSlot(){
 }
 
 // ── Compatibility shims ──
-function saveGame(){saveToSlot(activeSlot);}
 function autoSave(){saveToSlot(activeSlot);}
-function hasSave(){return SLOT_KEYS.some(k=>{try{return!!localStorage.getItem(k);}catch(e){return false;}});}
-function deleteSave(){try{localStorage.removeItem(SLOT_KEYS[activeSlot]);}catch(e){}}
 
 function initTitleScreen(){
   migrateOldSave();
@@ -8196,10 +8000,9 @@ document.addEventListener('keydown',e=>{
     if(cheatBuffer==='ATHANOR'){activateCheats();return;}
   }
   // While the buffer is a live prefix of ATHANOR, suppress single-letter gameplay
-  // hotkeys (notably 'r' = end run) so typing the code never disrupts a run.
+  // hotkeys so typing the code never disrupts a run. (Ending a run is button-only — no hotkey.)
   const buildingCheat=cheatBuffer.length>0&&'ATHANOR'.startsWith(cheatBuffer);
   if(!buildingCheat){
-    if(e.key==='r'||e.key==='R'){if(R&&!R.dead)endRun(false);}
     if(e.key==='p'||e.key==='P'){if(R&&!R.dead){R.paused?resumeRun():pauseRun();}}
   }
   if(e.key==='Escape'){if(R&&R.paused)resumeRun();}
@@ -8451,32 +8254,6 @@ function updStatsPanel(){
 }
 
 // ═══════════════════════════════════════════
-// RUN LOG
-// ═══════════════════════════════════════════
-function appendRunLog(entry){
-  if(!META.runHistory)META.runHistory=[];
-  META.runHistory.unshift(entry);// newest first
-  if(META.runHistory.length>50)META.runHistory.pop();// cap at 50
-}
-function renderRunLog(){
-  const con=document.getElementById('run-log-list');if(!con)return;
-  const history=META.runHistory||[];
-  if(!history.length){con.innerHTML='<div class="empty-note">No runs completed yet.</div>';return;}
-  con.innerHTML=history.map((e,i)=>`
-    <div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:16px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-        <span style="font-family:'Cinzel',serif;color:var(--gold)">Run ${e.runNum}</span>
-        <span style="color:var(--text-dim)">${e.died?'💀 Depleted':'✓ Ended'}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;color:var(--text-dim);">
-        <span>Cycle <span style="color:var(--text)">${e.cycle}</span></span>
-        <span>+<span style="color:var(--gold)">${e.au} AU</span></span>
-        <span><span style="color:var(--text)">${e.cards}</span> cards</span>
-      </div>
-    </div>`).join('');
-}
-
-// ═══════════════════════════════════════════
 // BASE CARDS AFFECT COMBINED NODES BY ELEMENT
 // ═══════════════════════════════════════════
 // Maps combined node elements to their parent base elements
@@ -8492,19 +8269,6 @@ const TEND_DRIFT=0.90;
 // Tendency: fixed per-cycle point budget distributed across ig/vt/tr/aq proportional to each
 // element's share of that cycle's raw output (R._outAccum). Placeholder — tune in economy pass.
 const TEND_OUTPUT_BUDGET=20;
-// Get effective flags/bonus for a combined node (inherits from parent elements)
-function getCombinedFlags(el){
-  const parents=COMBINED_PARENTS[el]||[];
-  const flags={};
-  parents.forEach(p=>{Object.assign(flags,R.cardFlags[p]||{});});
-  return flags;
-}
-function getCombinedBonus(el){
-  const parents=COMBINED_PARENTS[el]||[];
-  const bonus={lv:0,cap:0,mit:0};
-  parents.forEach(p=>{const b=R.cardBonus[p]||{};bonus.lv+=(b.lv||0)*0.5;bonus.cap+=(b.cap||0)*0.5;bonus.mit+=(b.mit||0)*0.5;});// 50% inheritance
-  return bonus;
-}
 
 // ═══════════════════════════════════════════
 // SHOP
@@ -8520,7 +8284,8 @@ function openShop(openInvAfter){
 
 function closeShop(){
   document.getElementById('shop-ov').classList.remove('show');
-  shopFurnaceSetup=false;
+  // (furnace listeners are attached once for the page's lifetime — re-arming them here stacked a
+  // duplicate set per shop visit, so one drop consumed several nodes)
   // Resume selecting state so the run continues cleanly
   R.selecting=false;
   if(_shopOpenInvAfter)setTimeout(()=>openInventory(),100);
@@ -8587,23 +8352,6 @@ function renderShopBuy(){
   });
 }
 
-function renderShopNodeChips(){
-  const con=document.getElementById('shop-node-chips');if(!con)return;
-  con.innerHTML='';
-  if(!R||!R.placedNodes.length){
-    con.innerHTML='<div style="font-size:16px;color:var(--text-dim);">No nodes on board.</div>';return;
-  }
-  const seen=new Set();
-  R.placedNodes.forEach(n=>{
-    if(seen.has(n.el))return;seen.add(n.el);
-    const def=NODE_DEFS[n.el];
-    const chip=document.createElement('div');
-    chip.className='inv-node '+n.el;chip.dataset.el=n.el;
-    chip.style.cssText=`width:40px;height:40px;cursor:grab;border-color:${def.color};box-shadow:0 0 6px ${def.color}44;background:linear-gradient(135deg, ${def.color}22, ${def.color}08);`;
-    chip.innerHTML=`<div class="inv-node-icon" style="font-size:22px;text-shadow:0 0 6px ${def.colorMid};">${def.icon}</div>`;
-    con.appendChild(chip);
-  });
-}
 
 let shopFurnaceSetup=false;
 function setupShopFurnace(){
@@ -8683,16 +8431,6 @@ function shopBuyNode(el){
   renderShop();
 }
 
-function shopConsumeNode(el){
-  if((META.nodeOwned[el]||0)<=0)return;
-  const idx=R.placedNodes.findIndex(n=>n.el===el);
-  if(idx===-1)return;
-  R.placedNodes.splice(idx,1);
-  if(consumeOwnedNode(el,true)){
-    updArcUI();drawBoard();
-    renderShop();
-  }
-}
 
 // ═══════════════════════════════════════════
 // BOOT

@@ -264,7 +264,7 @@ Disturbances rolled at cycle boundaries may grant tendency toward their element.
 |---|---|
 | **Evocation** | Survive 5–10 pulse spikes at 2.5s intervals |
 | **Abjuration** | Pulses suppressed; hold Arcane above 35% max for 45s while draining at 5% max/s × cycle |
-| **Transmutation** | Controls scrambled (Ig↔Tr↔Vt↔Aq loop + combined swaps); generate `1000 + cycle×100` |
+| **Transmutation** | Controls scrambled: clicking a node works the nearest node of the next element in the loop Ig→Tr→Vt→Aq→Ig (loop built from elements on the board; clickable combined nodes rotate likewise); generate `1000 + cycle×100` |
 | **Conjuration** | **3 random disturbances** at `1 + floor(cycle/6)` stacks each; generate target; disturbances removed on success |
 | **Divination** | Catch 4–6 foreseen pulses above random thresholds (3s warning); miss one → fail |
 | **Illusion** | Arcane bar hidden for 5–10 pulses; generate target blind |
@@ -292,9 +292,11 @@ Disturbances rolled at cycle boundaries may grant tendency toward their element.
 
 **Always-available (not equipped):** Temporary reward cards, Shop card — repeat every cycle, no capacity cost.
 
-**Arcane card gate:** All four bases on board + run count multiple of 5.
+**Arcane card gate:** All four bases on board + run count multiple of 5. Arcane cards cost **400 Arcane** (`ARCANE_CARD_COST`, below the 500 base threshold).
 
-Card pool details unchanged from v2.0 doc — 8 cards per base element (4 T1, 3 T2, 1 pinnacle), 9 Arcane cards. See `CARDS` array in build for exact names/effects.
+**Element relevance:** Base-element cards are only offered when that element is in play this run (on the board or in inventory, including combined nodes that inherit it).
+
+Card pool: 10 cards per base element (x1–x4 Tier 1, x5–x8 Tier 2, x9 pinnacle, x10 placement), 9 Arcane cards. See `CARDS` array in build for exact names/effects.
 
 ---
 
@@ -331,7 +333,7 @@ Also adds +15 to `lastTend` for that element per level-up.
 
 Combined nodes are **not** bought directly. Discovery requires meeting **both** thresholds in `COMBINED_REQS` while parent elements are **adjacent on the board during runs**:
 
-| Node | Parents | Runs w/ adjacency | Achievement |
+| Node | Parents | Cycles w/ adjacency | Achievement |
 |---|---|---|---|
 | Vapor | Ig+Vt | 15 | 150 Ignis clicks |
 | Salt | Aq+Tr | 15 | 20 Pulses survived w/ Aqua |
@@ -434,7 +436,7 @@ At 100%, next cycle completion offers Graduation Challenge (after card/planning 
 | **Ventus — Culmination Pulse** | 5 rapid pulses at 1.5× dmg; generate `2000 + cycle×150` |
 | **Ignis — The Reckoning** | Board locked 60s; generate target while Arcane ≥50% max |
 | **Aqua — The Bleed** | Continuous drain 60s; survive above zero |
-| **Terra — Null Zones** | 2 dark zones expand every 8s for 60s; ≥1 node active at end |
+| **Terra — Null Zones** | 1 dark zone expands every 8s for 40s; ≥1 node active at end |
 | **Arcane — Reckoning of Curses** | All disturbance severities doubled 60s; survive |
 
 Fail → grad resets to 0%, run continues. Win → pick 1 of 3 blind rewards, grad resets, run continues.
