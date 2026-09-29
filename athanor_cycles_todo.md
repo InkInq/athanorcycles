@@ -43,7 +43,7 @@
 
 **Primary income:** run-end `cycle × 3` AU (×1.5 Crucible). Side: overflow drip, lessons `3+stacks`, temps, graduation 15/25/40.
 
-**Primary sinks:** node level `lv×50` · base buy `10×1.8^owned` · combined buy `15×1.8^owned` · board 500/1000/1500 · cards own 25/50/100 · Transmutation 120 · Arcane shop 1M→~400 at full collection · Arcane rows `(lv+1)×150` + fuel.
+**Primary sinks:** node level `lv×50` · base buy `10×1.5^step` · combined buy `15×1.5^step` (step = lifetime purchases of that type, never refunded by consuming/forging) · board 500/1000/1500 · cards own 25/50/100 · Transmutation 120 · Arcane shop 1M→~400 at full collection · Arcane rows `(lv+1)×150` + fuel.
 
 **Cycle pressure:** target starts 600, ×1.30/cycle — stays ahead of log-scaling meta power.
 
@@ -73,7 +73,7 @@
 ### How combined levels increase (by design)
 - **First forge:** creates node at Lv1
 - **Transmutation re-forge:** adds sum of consumed parent levels — **only intended path**
-- **Graduation Surge rewards:** +1 level this run only (reverted at run end)
+- **Graduation Surge rewards:** permanent +1 level to every owned node of that lineage (earned reward)
 - **Prep “Level Up” (`hubLevel`):** **base nodes only** (`ig/tr/vt/aq`). Combined levels via Transmutation in The Forge only.
 
 ### Per-node scaling (Lv affects gameplay?)

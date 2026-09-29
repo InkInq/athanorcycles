@@ -71,7 +71,9 @@ Pulse rhythm, nodes, cycles, card selection overlays between cycles, lesson/grad
 Cycles reached, cards unlocked, AU earned (`cycle × 3`, ×1.5 in Crucible), tendency radar, graduation progress, snapshot capture. *Return to Grimoire* → Hub.
 
 **Pause Modal**  
-Mid-run overlay: settings, save/quit, quick reference. Board visible behind.
+Mid-run overlay: settings, End Run, Return to Title, quick reference. Board visible behind.
+
+**Return to Title (suspended run):** suspends the run for this session only. The title screen then offers **Resume** (costs `cycle × 1` AU; lands in the pause menu) or **End Run** (pays the normal run-end AU but permanently lowers the Arcane maximum by 2). The Grimoire stays closed until one is chosen; closing the game ends the run the same way. Pausing is disabled while a card/lesson/shop/graduation overlay is open.
 
 ---
 
@@ -212,7 +214,7 @@ Between cycles: card selection overlay, placement window, next cycle begins with
 
 ## Stability & Overflow
 
-**Overflow:** When Arcane is full, excess fills a secondary reserve (gold zone on bar, ~32% of bar width). Overflow absorbs pulse damage before Arcane. Modest passive conversion to AU. Consumed by pulses; does not persist between cycles.
+**Overflow:** When Arcane is full, excess fills a secondary reserve (gold zone on bar, ~32% of bar width). Overflow absorbs pulse damage before Arcane. Modest passive conversion to AU (`OVERFLOW_AU_RATE` = 0.1% of overflow per second, ×2 with Athanor's Breath). Consumed by pulses; does not persist between cycles.
 
 **Excess at cap:** Small passive AU trickle from sustained full-bar play.
 
@@ -316,14 +318,14 @@ Also adds +15 to `lastTend` for that element per level-up.
 
 ## Node Purchasing & Inventory
 
-**Hub purchase cost:** `round(10 × 1.8^owned)` AU per copy.
+**Hub/shop purchase cost:** `round(10 × 1.5^step)` AU per copy (combined `15 ×`). `step` starts at the number owned (starting hand) and **rises by 1 with every purchase of that type** — consuming or forging a node never lowers it (`META.nodePriceStep`).
 
 **Limits:** 3 copies per base element (default max); combined nodes max 1 each.
 
 **Consume mechanic (Preparation):** Sacrifice an owned node for permanent Arcane threshold bonus:
 - Base element: +25
 - Combined: +100
-- Arcane Node: +500 (one-time; system remains unlocked for repurchase)
+- Arcane Node: +500 each time it is consumed (system and row levels stay unlocked; each consumption raises the repurchase price ×1.5)
 
 ---
 
@@ -382,7 +384,7 @@ Singular meta-node — one copy in inventory at a time (max 1). Not an element; 
 
 ### Consume
 
-Consuming the placed/owned Arcane Node grants **+500 permanent** Arcane threshold (`ARCANE_NODE_CONSUME_BONUS`). The automation **system** stays unlocked; only the board piece is lost until repurchased.
+Consuming the placed/owned Arcane Node grants **+500 permanent** Arcane threshold (`ARCANE_NODE_CONSUME_BONUS`). The automation **system** stays unlocked and its row levels are kept; only the board piece is lost until repurchased. Each consumption multiplies the repurchase price by `ARCANE_REBUY_GROWTH` (1.5). An Arcane Node granted mid-run (Graduation, Cycle 50) goes straight to that run's inventory.
 
 ### Core Function — Observance (not bottom-bar autoplay)
 
@@ -406,7 +408,7 @@ Observed nodes must be base elements. Stressed state (Constitution overload inte
 
 **Opposition pairs:** obs↔con, eff↔aet — leveling one row increases fuel cost for its opposite.
 
-Row upgrade cost: `(level+1) × 150 AU`. Fuel slots require elemental nodes placed adjacent to the Arcane Node on the board during runs.
+Row upgrade cost: `(level+1) × 150 AU` plus fuel. **Fuel is deposited one node at a time** in The Forge: each deposit consumes that node immediately and is banked on the row (`META.arcane.fuel`) until the upgrade, so levels needing more fuel than you can own at once are reachable. Nodes planned on the board can't be used. A tri-node fills the Alchemy row in one deposit.
 
 **No autoplay toggle in bottom bar** — automation is intrinsic to the placed Arcane Node via observance + Efficiency row.
 
@@ -446,7 +448,7 @@ Fail → grad resets to 0%, run continues. Win → pick 1 of 3 blind rewards, gr
 | Reward | Effect |
 |---|---|
 | 15 / 25 / 40 AU | Immediate AU |
-| Ignis/Terra/Ventus/Aqua Surge | +1 level to all owned nodes of that lineage **this run only** (reverts end-run) |
+| Ignis/Terra/Ventus/Aqua Surge | **Permanent** +1 level to every owned node of that lineage (base + forged combined nodes that inherit it) |
 | Arcane Expansion | +100 arcMax this run |
 | Arcane Expansion II | +250 arcMax this run |
 | Pulse Reduction | −20% pulse damage this run |

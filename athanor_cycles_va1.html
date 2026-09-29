@@ -735,6 +735,8 @@ body{
 
     <!-- Base menu -->
     <div id="title-menu" style="display:flex;flex-direction:column;align-items:center;gap:10px;transition:opacity .25s;">
+      <!-- Shown instead of the Grimoire buttons while a run is suspended (filled by renderSuspendedRunPanel) -->
+      <div id="title-suspended" style="display:none;flex-direction:column;align-items:center;gap:10px;"></div>
       <div id="title-continue-btn" class="t-cta" style="display:none;width:220px;text-align:center;box-sizing:border-box;" onclick="continueRecentSlot()">CONTINUE GRIMOIRE</div>
       <div class="t-cta" style="width:220px;text-align:center;box-sizing:border-box;" onclick="showSlotPicker('new')">NEW GRIMOIRE</div>
       <div class="t-cta" style="animation:none;opacity:.75;width:220px;text-align:center;box-sizing:border-box;" onclick="showSlotPicker('load')">LOAD GRIMOIRE</div>
@@ -1364,7 +1366,7 @@ body{
     <div class="pause-btns">
       <div class="pbtn" onclick="resumeRun()">Resume</div>
       <div class="pbtn" onclick="endRun(false)">End Run</div>
-      <div class="pbtn" onclick="goTitle()">Return to Title</div>
+      <div class="pbtn" onclick="suspendRun()" title="Suspend this run and return to the title. Resuming costs AU; ending it costs 2 permanent max Arcane.">Return to Title</div>
     </div>
     <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;text-align:left;">
       <div style="font-family:'Cinzel',serif;font-size:15px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;">Settings</div>
@@ -1504,8 +1506,10 @@ const META={
   nodeLevels:{ig:1,tr:1,vt:1,aq:1,vp:1,sl:1,fe:1,an:1,ci:1,gl:1,im:1,ae:1,ju:1,ce:1,ar:1},
   nodeOwned:{ig:1,tr:1,vt:1,aq:0,vp:0,sl:0,fe:0,an:0,ci:0,gl:0,im:0,ae:0,ju:0,ce:0,ar:0},
   nodeMax:{ig:3,tr:3,vt:3,aq:3,vp:1,sl:1,fe:1,an:1,ci:1,gl:1,im:1,ae:1,ju:1,ce:1,ar:1},
+  nodePriceStep:null, // per-type purchase price step (see nodeBuyCost) — only ever rises
   arcane:{owned:false,rows:{obs:0,eff:0,aet:0,con:0,alc:0},auFromAlchemy:0,lastRunStats:null},
   unlockedCombined:[],
+  combinedDiscoverable:[], // combined nodes whose discovery is complete (Discover card eligible), announced once
   unlockedCards:[],
   ownedCards:[],
   equippedCards:[],
@@ -1570,10 +1574,15 @@ const COMBINED_REQS={
 // ARCANE NODE — automation node constants & helpers
 // ═══════════════════════════════════════════
 const ARCANE_THRESHOLD_BASE=500;
+// Share of overflow converted to AU per second (overflow itself drains ~1×/s, so this is ≈ the share of
+// excess generation that becomes AU). Athanor's Breath doubles it. Was 1%, which dominated late-game income
+// (~8× run-end AU on a strong late board even at 0.5%); at 0.1% overflow is a bonus of roughly 1–2× run-end AU.
+const OVERFLOW_AU_RATE=0.001;
 const ARCANE_NODE_CONSUME_BONUS=500;
 const PULSE_DMG_BASE=75; // tuned for 500 start (was 90 at 1000 threshold)
 const PULSE_DMG_CRUCIBLE=112; // was 135
 const ARCANE_BASE_PRICE=1000000;
+const ARCANE_REBUY_GROWTH=1.5; // Arcane shop price multiplier per previous consumption of the node
 // Arcane (board-amplifier) cards cost Arcane mid-run; kept below the 500 base threshold so they're
 // actually affordable when offered (was 700 — unbuyable without +200 max from consumes/graduation).
 const ARCANE_CARD_COST=400;
@@ -1599,6 +1608,19 @@ function getNodeConsumeGain(el){
   if(def&&def.combined)return 100;
   return 25;
 }
+// Node purchase pricing — each purchase of a type raises that type's next price (×NODE_PRICE_GROWTH), and the
+// price never falls back when a node is consumed or forged away (closes the buy → consume loop).
+// The price step starts at the number owned, so existing saves and starting hands keep today's prices.
+function ensureNodePriceStep(){
+  if(!META.nodePriceStep||typeof META.nodePriceStep!=='object'){
+    META.nodePriceStep={};
+    Object.keys(META.nodeOwned||{}).forEach(el=>{META.nodePriceStep[el]=META.nodeOwned[el]||0;});
+  }
+}
+function nodePriceStep(el){ensureNodePriceStep();return META.nodePriceStep[el]??(META.nodeOwned[el]||0);}
+const NODE_PRICE_GROWTH=1.5;
+function nodeBuyCost(el){return Math.round((NODE_DEFS[el]?.combined?15:10)*Math.pow(NODE_PRICE_GROWTH,nodePriceStep(el)));}
+function recordNodePurchase(el){META.nodePriceStep[el]=nodePriceStep(el)+1;}
 function consumeOwnedNode(el,applyToCurrentRun){
   if((META.nodeOwned[el]||0)<=0)return false;
   const def=NODE_DEFS[el];if(!def)return false;
@@ -1609,6 +1631,7 @@ function consumeOwnedNode(el,applyToCurrentRun){
   if(el==='ar'){
     ensureArcaneMeta();
     META.arcane.nodeConsumed=true;
+    META.arcane.consumeCount=(META.arcane.consumeCount||0)+1; // each use raises the repurchase price (getArcaneShopPrice)
     log(`${def.name} consumed — +${gain} permanent Arcane threshold (bonus total +${META.arcMaxBonus}).`,'g');
   }else log(`${def.name} consumed — +${gain} Arcane threshold${applyToCurrentRun&&R?` (now ${R.arcMax})`:''}.`,'g');
   autoSave();
@@ -1617,6 +1640,7 @@ function consumeOwnedNode(el,applyToCurrentRun){
 function ensureArcaneMeta(){
   if(!META.arcane)META.arcane={owned:false,rows:{obs:0,eff:0,aet:0,con:0,alc:0},auFromAlchemy:0,lastRunStats:null};
   if(!META.arcane.rows)META.arcane.rows={obs:0,eff:0,aet:0,con:0,alc:0};
+  if(!META.arcane.fuel||typeof META.arcane.fuel!=='object')META.arcane.fuel={obs:0,eff:0,aet:0,con:0,alc:0};
   if(META.arcane.lastRunStats===undefined)META.arcane.lastRunStats=null;
 }
 function getArcaneRows(){ensureArcaneMeta();return META.arcane.rows;}
@@ -1649,6 +1673,9 @@ function getArcaneMitBonus(){
 function getArcaneShopPrice(){
   let p=ARCANE_BASE_PRICE;
   (META.unlockedCombined||[]).forEach(el=>{p*=NODE_DEFS[el]&&NODE_DEFS[el].tri?0.4:0.5;});
+  // Rises ×ARCANE_REBUY_GROWTH for every time the node has been consumed, so the consume → re-buy
+  // reset stays possible but each +500 threshold costs more than the last
+  p*=Math.pow(ARCANE_REBUY_GROWTH,(META.arcane&&META.arcane.consumeCount)||0);
   return Math.max(1,Math.round(p));
 }
 function getArcaneOppositionSurcharge(rowKey){const opp=ARCANE_OPPOSITION[rowKey];return opp?(getArcaneRows()[opp]||0):0;}
@@ -1666,6 +1693,10 @@ function grantArcaneNode(source){
   META.nodeOwned.ar=1;
   META.nodeMax.ar=1;
   if(!META.nodeLevels.ar)META.nodeLevels.ar=1;
+  // Granted mid-run (Graduation reward, Cycle 50) — usable this run: it waits in inventory for the next placement window
+  if(R&&!R.dead&&!R.placedNodes.some(n=>n.el==='ar')&&!R.inventory.some(i=>(i.el||i)==='ar')){
+    R.inventory.push('ar');updInventoryUI();
+  }
   log(`α Arcane ${restored?'restored':'obtained'}! (${source})`,'g');
   autoSave();
   return true;
@@ -1706,18 +1737,32 @@ function trackArcanumArc(amt,type){
 }
 
 
-function checkCombinedUnlock(el){
-  if(META.unlockedCombined.includes(el))return;
+// Combined-node discovery (card route): meeting a node's COMBINED_REQS makes its "Discover:" card eligible
+// for run card offers (pickCards). Buying that card with Arcane is what unlocks forging (unlockCombinedNode).
+function combinedReqsMet(el){
+  const req=COMBINED_REQS[el];if(!req)return false;
   const prog=getCombinedProg(el);
-  const req=COMBINED_REQS[el];
-  if(!req)return;
-  if(prog.runsWithParents>=req.runsNeeded&&prog.achievement>=req.achNeeded){
-    META.unlockedCombined.push(el);
-    log(`✦ ${NODE_DEFS[el].name} node unlocked! Purchasable in Hub.`,'g');
-    const nm=NODE_DEFS[el].name;
-    tryShowRunCoach('unveil_combined',`<span class="coach-em">${nm}</span> is unlocked. Forge it in <span class="coach-em">The Forge</span> once parent levels are met.`);
-    autoSave();
-  }
+  return (prog.runsWithParents||0)>=req.runsNeeded&&(prog.achievement||0)>=req.achNeeded;
+}
+function checkCombinedUnlock(el){
+  if(META.unlockedCombined.includes(el)||!combinedReqsMet(el))return;
+  if(!Array.isArray(META.combinedDiscoverable))META.combinedDiscoverable=[];
+  if(META.combinedDiscoverable.includes(el))return; // announce once
+  META.combinedDiscoverable.push(el);
+  const nm=NODE_DEFS[el].name;
+  log(`✦ ${nm} discovery complete — its Discover card can now appear in card offers.`,'g');
+  tryShowRunCoach('unveil_discover',`<span class="coach-em">${nm}</span> discovery is complete. Watch your card offers for <span class="coach-em">Discover: ${nm}</span> — buying it with Arcane unlocks forging.`);
+  autoSave();
+}
+function unlockCombinedNode(el){
+  if(!META.unlockedCombined)META.unlockedCombined=[];
+  if(META.unlockedCombined.includes(el))return;
+  META.unlockedCombined.push(el);
+  const nm=NODE_DEFS[el]?.name||el;
+  log(`✦ Discovered: ${nm}! Forge it in The Forge.`,'g');
+  tryShowRunCoach('unveil_combined',`<span class="coach-em">${nm}</span> is unlocked. Forge it in <span class="coach-em">The Forge</span> once parent levels are met.`);
+  checkAllCombinedUnlocks(); // Mana Reversal flag counts unlocked nodes
+  autoSave();
 }
 
 function checkAllCombinedUnlocks(){
@@ -1921,11 +1966,12 @@ const CARDS=[
   {id:'aq10',el:'aq',name:'Sanctify',icon:'🜄',desc:'Placement: each endured pulse grants +5 Arcane per Aqua–Terra adjacency (max 3) and +5% Terra fill for 2s. Adjacent Ignis clicks are 5% weaker per adjacent Aqua.',cost:500,apply:r=>{r.cardFlags.aq._sanctify=true;}},
   // ── Arcane cards — Board Amplifiers ──
   {id:'ar1',el:'ar',name:'Confluence',icon:'🜀',desc:'All nodes generate +20% for the rest of this run. The board hums as one.',cost:ARCANE_CARD_COST,apply:r=>{r._confluence=(r._confluence||0)+0.20;log('Confluence: all nodes +20% output.','g');}},
-  {id:'ar2',el:'ar',name:'Resonant Field',icon:'🜀',desc:'Each node type on the board boosts all other types by +8%. Stacks per unique pairing.',cost:ARCANE_CARD_COST,apply:r=>{
+  {id:'ar2',el:'ar',name:'Resonant Field',icon:'🜀',desc:'All nodes generate +8% for each OTHER node type on the board this run (4 types = +24%).',cost:ARCANE_CARD_COST,apply:r=>{
+    // Linear in node types (was +8% per ordered pair — n×(n−1) — which reached +1,680% on a 15-type late board)
     const types=new Set(r.placedNodes.map(n=>n.el));
-    const pairs=types.size*(types.size-1);
-    r._resonantField=(r._resonantField||0)+pairs*0.08;
-    log(`Resonant Field: +${Math.round(pairs*8)}% from ${types.size} element types.`,'g');
+    const bonus=Math.max(0,types.size-1)*0.08;
+    r._resonantField=(r._resonantField||0)+bonus;
+    log(`Resonant Field: +${Math.round(bonus*100)}% from ${types.size} node types.`,'g');
   }},
   {id:'ar3',el:'ar',name:"Athanor's Breath",icon:'🜀',desc:'Overflow capacity doubled to 100% of Arcane Max for this run. Overflow converts to AU at twice the normal rate.',cost:ARCANE_CARD_COST,apply:r=>{r._breathOverflow=true;log("Athanor's Breath: overflow capacity doubled.",'g');}},
   // ── Arcane cards — Pulse Manipulation ──
@@ -4032,7 +4078,7 @@ function step(dt){
 
   // Overflow — convert to AU slowly
   if(R.overflow>0){
-    const rate=(R._breathOverflow?(2/100):(1/100))*(1+0.05*adjBoardStacks('tr','vt'));/*adj: Tr–Vt dividend*/
+    const rate=OVERFLOW_AU_RATE*(R._breathOverflow?2:1)*(1+0.05*adjBoardStacks('tr','vt'));/*adj: Tr–Vt dividend*/
     const auGain=R.overflow*dt*rate;
     META.au+=auGain;
     R.overflow-=auGain*(1/rate);
@@ -4040,7 +4086,7 @@ function step(dt){
     document.getElementById('tau').textContent=Math.floor(META.au);
   }
 
-  R.pulse_t-=dt;if(R.pulse_t<=0)firePulse();
+  if(!pulsesSuppressed()){R.pulse_t-=dt;if(R.pulse_t<=0)firePulse();}
   const sf=R.arcMax*0.28;
   if(R.cyc_gen>=R.cyc_target&&R.arc>=sf){
     R.stab_t+=dt;document.getElementById('sbar').style.width=`${Math.min(100,R.stab_t/R.stab_need*100)}%`;
@@ -4058,6 +4104,14 @@ function step(dt){
 // ═══════════════════════════════════════════
 // PULSE
 // ═══════════════════════════════════════════
+// Normal pulses pause (the countdown freezes, then resumes) while any pulse-replacing effect is active:
+// Abjuration / Divination lessons, or the Culmination / Bleed graduation challenges. Several can overlap safely.
+function pulsesSuppressed(){
+  if(!R)return false;
+  const gs=R._gradActive&&R._gradState;
+  if(gs&&(gs.type==='ventus'||gs.type==='aqua'))return true;
+  return (R.activeLessons||[]).some(ls=>ls.id==='abjuration'||ls.id==='divination');
+}
 function calcSpikePulseDamage(r){
   const raw=r.pulse_dmg*(1+r.cycle*0.18)*1.5;
   let mit=r._stackedMit!=null?r._stackedMit:getNodeMit();
@@ -4380,8 +4434,7 @@ const LESSON_DEFS={
     init(r){
       r._lessState={duration:45,elapsed:0,floor:r.arcMax*0.35,failed:false};
       r._lessDrainRate=r.arcMax*0.05*r.cycle; // 5% of max per second, scaled by cycle accepted on
-      r._origPulseT=r.pulse_t;
-      r.pulse_t=9999; // suppress pulses
+      // normal pulses are paused while this lesson is active — see pulsesSuppressed()
       log(`Abjuration: hold above ${Math.round(r.arcMax*0.35)} Arcane for 45s.`,'g');
     },
     step(r,dt,ls){
@@ -4390,13 +4443,12 @@ const LESSON_DEFS={
       s.elapsed+=dt;
       if(r.arc<s.floor){s.failed=true;}
       if(s.failed||r.arc<=0){
-        r.pulse_t=r._origPulseT||7.5;
         if(r.arc<=0)endRun(true);
         log('Abjuration failed — Arcane dropped below floor.','w');
         return 'fail';
       }
       ls.progress=Math.min(1,s.elapsed/s.duration);
-      if(s.elapsed>=s.duration){r.pulse_t=r._origPulseT||7.5;return true;}
+      if(s.elapsed>=s.duration)return true;
     },
     progressText(ls){const s=ls._lessState;return `${Math.round(s.elapsed)}s / 45s`;}
   },
@@ -4463,15 +4515,14 @@ const LESSON_DEFS={
       const count=4+Math.floor(Math.random()*3); // 4–6
       const thresholds=Array.from({length:count},()=>Math.round(r.arcMax*(0.3+Math.random()*0.4)));
       r._lessState={count,thresholds,caught:0,failed:false,nextT:3.0,nextIdx:0,announced:false};
-      r._origPulseT=r.pulse_t;
-      r.pulse_t=9999; // suppress normal pulses
+      // normal pulses are paused while this lesson is active — see pulsesSuppressed()
       log(`Divination: catch ${count} foreseen pulses above their thresholds.`,'g');
     },
     step(r,dt,ls){
       const s=ls._lessState;
       updateDivinationTicks(s.failed||s.nextIdx>=s.count?null:s.thresholds[s.nextIdx],r.arcMax);
-      if(s.failed){updateDivinationTicks(null);r.pulse_t=r._origPulseT||7.5;return 'fail';}
-      if(s.nextIdx>=s.count){updateDivinationTicks(null);r.pulse_t=r._origPulseT||7.5;return true;}
+      if(s.failed){updateDivinationTicks(null);return 'fail';}
+      if(s.nextIdx>=s.count){updateDivinationTicks(null);return true;}
       s.nextT-=dt;
       // Announce upcoming pulse
       if(s.nextT<=3.0&&!s.announced){
@@ -4488,7 +4539,7 @@ const LESSON_DEFS={
           s.caught++;log(`Divination: caught! (${s.caught}/${s.count})`,'g');
         } else {
           s.failed=true;log(`Divination: missed threshold of ${thresh} — lesson failed.`,'w');
-          updateDivinationTicks(null);r.pulse_t=r._origPulseT||7.5;return 'fail';
+          updateDivinationTicks(null);return 'fail';
         }
         s.nextIdx++;s.nextT=3.5;s.announced=false;
         if(r.arc<=0){endRun(true);return;}
@@ -4597,7 +4648,7 @@ function acceptLesson(){
   if(!_pendingLesson||!R)return;
   const{id,def}=_pendingLesson;
   if(!R.activeLessons)R.activeLessons=[];
-  const ls={id,def,progress:0,_lessState:{},_lessPulseT:0,_lessDrainRate:0,_origPulseT:R.pulse_t};
+  const ls={id,def,progress:0,_lessState:{},_lessPulseT:0,_lessDrainRate:0};
   R.activeLessons.push(ls);
   def.init(R);
   // Copy state from R to ls
@@ -4609,6 +4660,7 @@ function acceptLesson(){
   updPulse();
   if(!META._lessonTabHinted&&!_lessonPanelOpen){META._lessonTabHinted=true;const t=document.getElementById('lesson-panel-tab');if(t)t.classList.add('tut-highlight');}
   log(`Lesson accepted: ${def.name}.`,'g');
+  continueAfterLessonOffer();
 }
 
 function declineLesson(){
@@ -4619,6 +4671,13 @@ function declineLesson(){
   _pendingLesson=null;
   R.selecting=false;
   log('Lesson declined.','n');
+  continueAfterLessonOffer();
+}
+// Cycle-boundary flow: once the Lesson offer is answered, open the queued card offer (re-pauses the run)
+function continueAfterLessonOffer(){
+  const next=R&&R._afterLessonOffer;
+  if(R)R._afterLessonOffer=null;
+  if(next&&!R.dead)next();
 }
 
 function toggleLessonPanel(){
@@ -4703,6 +4762,8 @@ function stepLessons(dt){
     else if(gradBefore<=0&&R.grad>0)tryShowRunCoach('unveil_graduation','Graduation progress grows with each completed Lesson. At 100%, you\u2019ll be offered a Graduation Challenge for a lasting reward.');
     autoSave();
   });
+  // Mastery (all 8 schools) is the win condition — check it the moment the last new school is completed
+  if(completed.length)checkGameWin();
   failed.forEach(ls=>{log(`✦ Lesson failed: ${ls.def.name}.`,'w');});
   if(completed.length||failed.length)updLessonUI();
   else if(R.activeLessons.length)updLessonUI();
@@ -4715,7 +4776,6 @@ function resetLessonsOnCycle(){
 function cleanupLessonsOnRunEnd(){
   if(!R)return;
   // Restore suppressed pulses from any active lessons
-  if(R._origPulseT)R.pulse_t=R._origPulseT;
   R._illusion=false;updArcUI();
   R._transmutationMap=null;
   R._traitorNode=null;
@@ -4735,8 +4795,7 @@ const GRAD_CHALLENGE_DEFS={
       const target=2000+r.cycle*150;
       r._gradSpikeInterval=1.5;
       r._gradState={type:'ventus',target,generated:0,pulsesFired:0,totalPulses:5,pulseT:0,done:false};
-      r._origPulseT=r.pulse_t;
-      r.pulse_t=9999; // only the 5 culmination spikes fire — not normal pulses
+      // only the 5 culmination spikes fire — normal pulses are paused (see pulsesSuppressed())
       log(`⚗ Graduation Challenge: Culmination Pulse — generate ${target} Arcane!`,'g');
     },
     step(r,dt,gs){
@@ -4750,7 +4809,6 @@ const GRAD_CHALLENGE_DEFS={
       gs.generated=r._gradGenerated||0;
       gs.progress=Math.min(1,gs.generated/gs.target);
       if(gs.pulsesFired>=gs.totalPulses){
-        r.pulse_t=r._origPulseT||7.5;
         return gs.generated>=gs.target?'win':'fail';
       }
     },
@@ -4782,16 +4840,15 @@ const GRAD_CHALLENGE_DEFS={
     desc:`A continuous drain replaces all pulses for 60 seconds. Mitigation helps but cannot stop it. Keep your Arcane above zero.`,
     init(r){
       r._gradState={type:'aqua',elapsed:0,duration:60,drainRate:r.arcMax*0.015};
-      r._origPulseT=r.pulse_t;
-      r.pulse_t=9999;
+      // continuous drain replaces pulses — see pulsesSuppressed()
       log(`⚗ Graduation Challenge: The Bleed — survive 60s of continuous drain!`,'g');
     },
     step(r,dt,gs){
       gs.elapsed+=dt;
       const effDrain=gs.drainRate*(1-(r._stackedMit||0)*0.5);
       r.arc=Math.max(0,r.arc-effDrain*dt);updArcUI();
-      if(r.arc<=0){r.pulse_t=r._origPulseT||7.5;endRun(true);return 'dead';}
-      if(gs.elapsed>=gs.duration){r.pulse_t=r._origPulseT||7.5;return 'win';}
+      if(r.arc<=0){endRun(true);return 'dead';}
+      if(gs.elapsed>=gs.duration)return 'win';
     },
     progressText(gs){return `${Math.round(gs.elapsed)}s / 60s`;}
   },
@@ -4861,14 +4918,22 @@ const GRAD_CHALLENGE_DEFS={
 };
 
 // Graduation reward pool
+// Graduation Surge — an earned, PERMANENT +1 level to every owned node of one lineage (base + combined that inherit it).
+// Only nodes with a level entry are raised (unforged combined nodes have none yet). Saved immediately via pickGradReward.
+function applyGradSurge(name,els){
+  const raised=els.filter(el=>META.nodeLevels[el]);
+  raised.forEach(el=>META.nodeLevels[el]++);
+  if(R)R.placedNodes.filter(n=>n.el==='ce'&&n.state&&raised.includes('ce')).forEach(n=>{n.state.reserve_cap=300+(META.nodeLevels.ce-1)*150;});
+  log(`${name} Surge: ${raised.map(el=>NODE_DEFS[el].name).join(', ')} permanently +1 level.`,'g');
+}
 const GRAD_REWARDS=[
   {id:'au15',name:'15 AU',icon:'✦',desc:'Immediately grant 15 AU.',apply(r){META.au+=15;document.getElementById('tau').textContent=Math.floor(META.au);log('+15 AU reward.','g');}},
   {id:'au25',name:'25 AU',icon:'✦✦',desc:'Immediately grant 25 AU.',apply(r){META.au+=25;document.getElementById('tau').textContent=Math.floor(META.au);log('+25 AU reward.','g');}},
   {id:'au40',name:'40 AU',icon:'✦✦✦',desc:'Immediately grant 40 AU.',apply(r){META.au+=40;document.getElementById('tau').textContent=Math.floor(META.au);log('+40 AU reward.','g');}},
-  {id:'igSurge',name:'Ignis Surge',icon:'🜂',desc:'All Ignis-type nodes gain +1 level this run.',apply(r){const els=['ig','vp','fe','an','im','ae','ju'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Ignis Surge: all Ignis-type nodes +1 level this run.','g');}},
-  {id:'trSurge',name:'Terra Surge',icon:'🜃',desc:'All Terra-type nodes gain +1 level this run.',apply(r){const els=['tr','sl','fe','ci','im','ae','ce'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Terra Surge: all Terra-type nodes +1 level this run.','g');}},
-  {id:'vtSurge',name:'Ventus Surge',icon:'🜁',desc:'All Ventus-type nodes gain +1 level this run.',apply(r){const els=['vt','vp','ci','gl','im','ju','ce'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Ventus Surge: all Ventus-type nodes +1 level this run.','g');}},
-  {id:'aqSurge',name:'Aqua Surge',icon:'🜄',desc:'All Aqua-type nodes gain +1 level this run.',apply(r){const els=['aq','sl','an','gl','ae','ju','ce'].filter(el=>META.nodeLevels[el]);els.forEach(el=>META.nodeLevels[el]++);r._gradSurgedEls=(r._gradSurgedEls||[]).concat(els);log('Aqua Surge: all Aqua-type nodes +1 level this run.','g');}},
+  {id:'igSurge',name:'Ignis Surge',icon:'🜂',desc:'Permanently raise every owned Ignis-lineage node by +1 level.',apply(r){applyGradSurge('Ignis',['ig','vp','fe','an','im','ae','ju']);}},
+  {id:'trSurge',name:'Terra Surge',icon:'🜃',desc:'Permanently raise every owned Terra-lineage node by +1 level.',apply(r){applyGradSurge('Terra',['tr','sl','fe','ci','im','ae','ce']);}},
+  {id:'vtSurge',name:'Ventus Surge',icon:'🜁',desc:'Permanently raise every owned Ventus-lineage node by +1 level.',apply(r){applyGradSurge('Ventus',['vt','vp','ci','gl','im','ju','ce']);}},
+  {id:'aqSurge',name:'Aqua Surge',icon:'🜄',desc:'Permanently raise every owned Aqua-lineage node by +1 level.',apply(r){applyGradSurge('Aqua',['aq','sl','an','gl','ae','ju','ce']);}},
   {id:'arcExp1',name:'Arcane Expansion',icon:'◉',desc:'+100 maximum Arcane for this run.',apply(r){r.arcMax+=100;updArcUI();log('+100 Arcane maximum.','g');}},
   {id:'arcExp2',name:'Arcane Expansion II',icon:'◎',desc:'+250 maximum Arcane for this run.',apply(r){r.arcMax+=250;updArcUI();log('+250 Arcane maximum.','g');}},
   {id:'pulseRed',name:'Pulse Reduction',icon:'🛡',desc:'Pulse base damage reduced 20% for this run.',apply(r){r._gradPulseReduction=(r._gradPulseReduction||0)+0.20;log('Pulse damage reduced by 20% this run.','g');}},
@@ -4972,7 +5037,6 @@ function stepGraduation(dt){
 
 function graduationWin(){
   R._gradActive=false;R._gradBoardLock=false;R._gradDisturbanceDouble=false;
-  if(R._origPulseT){R.pulse_t=R._origPulseT;R._origPulseT=null;}
   _graduationChallenge=null;updLessonUI();
   // Clear board tint
   const tint=document.getElementById('board-lesson-tint');
@@ -4991,7 +5055,6 @@ function graduationWin(){
 
 function graduationFail(){
   R._gradActive=false;R._gradBoardLock=false;R._gradDisturbanceDouble=false;
-  if(R._origPulseT){R.pulse_t=R._origPulseT;R._origPulseT=null;}
   _graduationChallenge=null;updLessonUI();
   const tint=document.getElementById('board-lesson-tint');
   if(tint){tint.style.background='rgba(200,164,72,.04)';tint.classList.toggle('active',(R.activeLessons||[]).length>0);}
@@ -5365,17 +5428,16 @@ function nextCycle(){
   resetLessonsOnCycle();
   log(`Cycle ${R.cycle}. Target: ${R.cyc_target}`,'g');
   if(shouldRollDisturbance(R.cycle))rollDisturbance();
-  if(shouldRollLesson(R.cycle))rollLesson();
   if(shouldRollDisturbance(R.cycle+1)&&!shouldRollDisturbance(R.cycle))flashDisturbanceTelegraph();
   document.getElementById('tc').textContent=R.cycle;document.getElementById('cv').textContent=R.cycle;
   document.getElementById('gp').textContent=`${Math.round(R.grad)}%`;document.getElementById('gf').style.width=`${R.grad}%`;
   updCyc();
-  if(R.grad>=100){
-    // Card offer first, then graduation challenge starts after
-    showCards(true,true); // extra flag signals grad challenge follows
-  } else {
-    showCards(true);
-  }
+  // Card offer (then placement, then graduation challenge if progress is full)
+  const offerCards=()=>showCards(true,R.grad>=100);
+  // A Lesson offer goes FIRST and the card offer waits for its answer — opening both at once let
+  // accept/decline unpause the run while the card overlay was still up.
+  if(shouldRollLesson(R.cycle)){R._afterLessonOffer=offerCards;rollLesson();}
+  else offerCards();
 }
 
 // ═══════════════════════════════════════════
@@ -5397,12 +5459,10 @@ function pickCard(c,openInvAfter){
   }
   R.arc-=c.cost;c.apply(R);
   if(c.isUnlock){
-    // Combined node unlock — add to permanent unlocked list + Hub purchasing
-    if(!META.unlockedCombined)META.unlockedCombined=[];
-    if(!META.unlockedCombined.includes(c.unlocks))META.unlockedCombined.push(c.unlocks);
-    META.ownedCards.push({id:c.id}); // auto-owned permanently
-    log(`Discovered: ${NODE_DEFS[c.unlocks]?.name||c.name}! Now purchasable in Hub.`,'g');
-    autoSave();closeOv(openInvAfter);return;
+    // Combined node Discover card — permanently unlocks forging this node in The Forge
+    META.ownedCards.push({id:c.id}); // auto-owned permanently (keeps it out of future offers)
+    unlockCombinedNode(c.unlocks);
+    updArcUI();closeOv(openInvAfter);return;
   }
   META.unlockedCards.push(c);R.thisRunCards.push(c);
   R.tend[c.el]=(R.tend[c.el]||0)+30;META.lastTend[c.el]=(META.lastTend[c.el]||0)+30;
@@ -5576,7 +5636,9 @@ function syncFullscreenToggle(){
 document.addEventListener('fullscreenchange',syncFullscreenToggle);
 document.addEventListener('webkitfullscreenchange',syncFullscreenToggle);
 
-function pauseRun(){R.paused=true;const ov=document.getElementById('pause-ov');ov.classList.add('show');applySettings();}
+// Card / lesson / shop / graduation overlays already hold the run (R.selecting) and live outside the run
+// screen — pausing on top of them would let "Return to Title" strand them over the title.
+function pauseRun(){if(!R||R.dead||R.suspended||R.selecting)return;R.paused=true;const ov=document.getElementById('pause-ov');ov.classList.add('show');applySettings();}
 function resumeRun(){R.paused=false;document.getElementById('pause-ov').classList.remove('show');}
 
 // ═══════════════════════════════════════════
@@ -5624,7 +5686,6 @@ function endRun(died){
   META.lastBoard=R.placedNodes.map(n=>({el:n.el,q:n.q,r:n.r}));
   META._boardEverSet=true;
   updateCombinedProgressEndRun();
-  if(R._gradSurgedEls){R._gradSurgedEls.forEach(el=>{if(META.nodeLevels[el])META.nodeLevels[el]=Math.max(1,META.nodeLevels[el]-1);});R._gradSurgedEls=null;}
   if(typeof updateDivinationTicks==='function')updateDivinationTicks(null);
   clearNecroDecay();
   META.lastRunStats={cycle:R.cycle,pulseDmg:Math.round((R.stats&&R.stats.pulseDmg)||0),died};
@@ -5726,6 +5787,63 @@ function goScreen(id){
   if(id==='s-run')requestAnimationFrame(()=>resizeBoardCanvas());
 }
 function goTitle(){stopLoop();dismissRunOverlays();goScreen('s-title');showTitleMenu();}
+
+// ── Suspended runs ──
+// "Return to Title" from the pause menu suspends the run (this session only). From the title the player
+// either resumes it for AU (cycle × SUSPEND_RESUME_AU_PER_CYCLE) or ends it: normal run-end AU is paid,
+// but the permanent Arcane maximum drops by SUSPEND_END_MAX_COST. Closing the tab ends it the same way.
+const SUSPEND_RESUME_AU_PER_CYCLE=1;
+const SUSPEND_END_MAX_COST=2;
+function hasSuspendedRun(){return !!(R&&R.suspended&&!R.dead);}
+function suspendResumeCost(){return Math.max(1,(R?R.cycle:1)*SUSPEND_RESUME_AU_PER_CYCLE);}
+function suspendRun(){
+  if(!R||R.dead||R.selecting)return;
+  stopLoop();
+  R.suspended=true;R.paused=true;
+  document.getElementById('pause-ov').classList.remove('show');
+  const tt=document.getElementById('node-tt');if(tt)tt.classList.remove('show');
+  closeRpanel();
+  log('Run suspended.','n');
+  autoSave();
+  goScreen('s-title');showTitleMenu();
+}
+function resumeSuspendedRun(){
+  if(!hasSuspendedRun())return;
+  const cost=suspendResumeCost();
+  if(META.au<cost){renderSuspendedRunPanel();return;}
+  META.au-=cost;R.suspended=false;
+  log(`Run resumed (−${cost} AU).`,'n');
+  autoSave();
+  goScreen('s-run');
+  document.getElementById('tau').textContent=Math.floor(META.au);
+  updArcUI();updCyc();updPulse();updCardList();updDisturbanceUI();updLessonUI();updEffectUI();
+  if(R.placing)updInventoryUI();
+  requestAnimationFrame(()=>{resizeBoardCanvas();drawBoard();});
+  R.paused=false;startLoop();pauseRun(); // land in the pause menu so the player isn't hit the instant they return
+}
+function endSuspendedRun(){
+  if(!hasSuspendedRun())return;
+  META.arcMaxBonus=(META.arcMaxBonus||0)-SUSPEND_END_MAX_COST;
+  R.suspended=false;R.paused=false;
+  endRun(false); // pays the normal cycle × 3 AU and saves (after the max penalty above)
+  document.getElementById('res-title').textContent='RUN ABANDONED';
+  document.getElementById('res-sub').textContent=`The run was left unfinished — permanent Arcane maximum −${SUSPEND_END_MAX_COST}.`;
+}
+function renderSuspendedRunPanel(){
+  const panel=document.getElementById('title-suspended');if(!panel)return;
+  const sus=hasSuspendedRun();
+  panel.style.display=sus?'flex':'none';
+  // While a run is suspended, the Grimoire (hub, other slots) stays closed until it is resumed or ended
+  document.querySelectorAll('#title-menu > .t-cta').forEach(b=>{b.style.display=sus?'none':'';});
+  if(!sus){const c=document.getElementById('title-continue-btn');if(c)c.style.display=getMostRecentSlot()!==null?'block':'none';return;}
+  const cost=suspendResumeCost(),can=META.au>=cost;
+  panel.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:15px;letter-spacing:2px;color:var(--gold-soft);">RUN IN PROGRESS · CYCLE ${R.cycle}</div>
+    <div class="t-cta" style="width:260px;text-align:center;box-sizing:border-box;${can?'':'opacity:.4;pointer-events:none;'}" onclick="resumeSuspendedRun()">RESUME RUN — ${cost} AU</div>
+    <div class="t-cta" style="animation:none;opacity:.8;width:260px;text-align:center;box-sizing:border-box;" onclick="endSuspendedRun()">END RUN — −${SUSPEND_END_MAX_COST} MAX ARCANE</div>
+    <div style="font-size:14px;color:var(--text-dim);max-width:300px;text-align:center;line-height:1.4;">${can?'':`Need ${cost} AU to resume (you have ${Math.floor(META.au)}). `}Ending pays the run's normal AU.</div>`;
+}
+// Closing or reloading the game while a run is suspended ends it exactly like "End Run" above
+window.addEventListener('pagehide',()=>{if(hasSuspendedRun())endSuspendedRun();});
 function goHub(){
   stopLoop();
   forgeSelectedChip=null;
@@ -5742,6 +5860,7 @@ function goHub(){
   setTimeout(setupNodeLevelTooltips,80);
 }
 function beginRun(){
+  if(hasSuspendedRun())return; // never silently discard a suspended run
   tutCheckTrigger('begin-run');
   tutClear();
   hideCoachBlurb(document.getElementById('run-coach-blurb'));
@@ -5809,11 +5928,12 @@ function newGame(){
   const _startHand={ig:1,tr:0,vt:0,aq:0},_bases=['ig','tr','vt','aq'];
   for(let i=0;i<2;i++)_startHand[_bases[Math.floor(Math.random()*4)]]++;
   META.nodeOwned=_startHand;
+  META.nodePriceStep={..._startHand}; // purchase price steps start at the starting hand
   META.nodeMax={ig:3,tr:3,vt:3,aq:3};META.unlockedCards=[];META.ownedCards=[];META.offerSlots=3;
   META.equippedCards=[];META.cardSlots=5;META.cardCap=5;
   META.lastTend={ig:1,vt:1,tr:1,aq:1};META.tendencySnapshots=[];META.equippedSnapshot=null;META.lastRunTendHistory=[];
   META.lastGrad=0;META.boardRange=1;META.lastBoard=[];META.lastRunCards=[];META._boardEverSet=false;
-  META.unlockedCombined=[];META.runHistory=[];META.arcMaxBonus=0;
+  META.unlockedCombined=[];META.combinedDiscoverable=[];META.runHistory=[];META.arcMaxBonus=0;
   META.unlockedReversal=false;META.unlockedCreate=false;META.unlockedTransmutation=false;
   META.unlockedAdj={};
   META.reforgeCount={};META.lastRunStats=null;
@@ -5840,65 +5960,45 @@ function rankBonusLabel(el){
   const r=nodeRank(el);
   return r>=3?'+20% output':r>=2?'+10% output':'';
 }
-const arcaneRowSlots={};
 const COMBINED_LIST=['vp','sl','fe','an','ci','gl','im','ae','ju','ce'];
 
+// ── Arcane row fuel ── deposited ONE node at a time. Each deposit consumes that node immediately and
+// is banked on the row (META.arcane.fuel) until the row is upgraded, so a level needing more fuel
+// than you can own at once (base types cap at 3) is still reachable. Planned-board nodes are protected.
+function getArcaneFuel(rowKey){ensureArcaneMeta();return META.arcane.fuel[rowKey]||0;}
 function isValidArcaneFuel(rowKey,el){
   const def=ARCANE_ROW_DEFS[rowKey];if(!def||!el)return false;
   if(def.fuelEl==='combined')return !!(NODE_DEFS[el]&&NODE_DEFS[el].combined);
   return el===def.fuelEl;
 }
-function assignArcaneRowSlot(rowKey,slotIdx,fuelEl){
+function spareNodeCount(el){
+  const planned=(META.lastBoard||[]).filter(n=>n.el===el).length;
+  return (META.nodeOwned[el]||0)-planned;
+}
+function depositArcaneFuel(rowKey,fuelEl){
   const chip=fuelEl||forgeSelectedChip;
-  if(!chip||!isValidArcaneFuel(rowKey,chip))return;
-  const needed=getArcaneFuelNeeded(rowKey);if(!needed)return;
-  if(!arcaneRowSlots[rowKey]||arcaneRowSlots[rowKey].length!==needed)
-    arcaneRowSlots[rowKey]=new Array(needed).fill(null);
-  if(NODE_DEFS[chip].tri)
-    arcaneRowSlots[rowKey]=new Array(needed).fill(chip);
-  else
-    arcaneRowSlots[rowKey][slotIdx]=chip;
   forgeSelectedChip=null;
-  renderForgePage();renderHubInventory();
+  const refresh=()=>{renderForgePage();renderHubInventory();};
+  if(!chip||!isValidArcaneFuel(rowKey,chip)){refresh();return;}
+  const needed=getArcaneFuelNeeded(rowKey),have=getArcaneFuel(rowKey);
+  if(!needed||have>=needed){refresh();return;}
+  if(spareNodeCount(chip)<1){log(`No spare ${NODE_DEFS[chip].name} — nodes planned on your board can't be used as fuel.`,'w');refresh();return;}
+  META.nodeOwned[chip]--;
+  // A tri-node is super fuel: it fills the row's remaining fuel in one deposit
+  META.arcane.fuel[rowKey]=NODE_DEFS[chip].tri?needed:have+1;
+  log(`α ${NODE_DEFS[chip].name} fed to ${ARCANE_ROW_DEFS[rowKey].name} (${META.arcane.fuel[rowKey]}/${needed}).`,'g');
+  autoSave();refresh();
 }
-function clearArcaneRowSlot(rowKey,slotIdx){
-  if(!arcaneRowSlots[rowKey])return;
-  arcaneRowSlots[rowKey][slotIdx]=null;
-  renderForgePage();
-}
+// Slot clicks and drag-drops onto a row's slots route here (slot index no longer matters)
+function assignArcaneRowSlot(rowKey,slotIdx,fuelEl){depositArcaneFuel(rowKey,fuelEl);}
 function hubUpgradeArcaneRow(rowKey){
   const needed=getArcaneFuelNeeded(rowKey);if(!needed)return;
-  if(!arcaneRowSlots[rowKey]||arcaneRowSlots[rowKey].length!==needed)
-    arcaneRowSlots[rowKey]=new Array(needed).fill(null);
-  const slots=arcaneRowSlots[rowKey];
-  const hasTri=slots.some(s=>s&&NODE_DEFS[s]&&NODE_DEFS[s].tri);
-  if(!hasTri&&!slots.every(s=>s))return;
+  if(getArcaneFuel(rowKey)<needed)return;
   const auCost=getArcaneAuCost(rowKey);
   if(META.au<auCost)return;
-  const onBoard={};(META.lastBoard||[]).forEach(n=>{onBoard[n.el]=(onBoard[n.el]||0)+1;});
-  if(hasTri){
-    const triEl=slots.find(s=>s&&NODE_DEFS[s].tri);
-    if((META.nodeOwned[triEl]||0)-(onBoard[triEl]||0)<1){log('Not enough tri nodes available.','w');return;}
-    META.nodeOwned[triEl]=Math.max(0,(META.nodeOwned[triEl]||0)-1);
-    if(META.lastBoard&&META.lastBoard.length){
-      let planned=META.lastBoard.filter(n=>n.el===triEl).length;
-      while(planned>(META.nodeOwned[triEl]||0)){const idx=META.lastBoard.map(n=>n.el).lastIndexOf(triEl);if(idx===-1)break;META.lastBoard.splice(idx,1);planned--;}
-    }
-  } else {
-    for(const el of slots){
-      if((META.nodeOwned[el]||0)-(onBoard[el]||0)<1){log(`Not enough ${NODE_DEFS[el]?.name||el} nodes.`,'w');return;}
-    }
-    slots.forEach(el=>{
-      META.nodeOwned[el]=Math.max(0,(META.nodeOwned[el]||0)-1);
-      if(META.lastBoard&&META.lastBoard.length){
-        let planned=META.lastBoard.filter(n=>n.el===el).length;
-        while(planned>(META.nodeOwned[el]||0)){const idx=META.lastBoard.map(n=>n.el).lastIndexOf(el);if(idx===-1)break;META.lastBoard.splice(idx,1);planned--;}
-      }
-    });
-  }
   META.au-=auCost;
   getArcaneRows()[rowKey]=(getArcaneRows()[rowKey]||0)+1;
-  arcaneRowSlots[rowKey]=[];
+  META.arcane.fuel[rowKey]=0;
   log(`α ${ARCANE_ROW_DEFS[rowKey].name} → Lv${getArcaneRows()[rowKey]}.`,'g');
   renderForgePage();renderHubInventory();autoSave();
 }
@@ -5964,6 +6064,22 @@ function renderForgeDiscoveryList(){
     if(unlocked)return forgeCardHTML(el);
     const req=COMBINED_REQS[el],prog=META.combinedProgress[el]||{runsWithParents:0,achievement:0};
     const pct=combinedDiscoveryPct(el);
+    if(combinedReqsMet(el)){
+      // Discovery complete — the node unlocks by buying its Discover card during a run
+      const card=COMBINED_CARDS.find(c=>c.unlocks===el);
+      const missing=(card&&card.requires||[]).filter(r=>!(META.unlockedCombined||[]).includes(r));
+      const note=missing.length
+        ?`Also needs ${missing.map(r=>NODE_DEFS[r]?.name||r).join(', ')} discovered before its card can appear.`
+        :`Watch your run card offers for <b>Discover: ${def.name}</b> (${card?card.cost:120} Arcane) — buying it unlocks forging.`;
+      return `<div class="forge-disc-card" style="border-left:2px solid ${def.color};">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:19px;color:${def.colorMid};">${def.icon}</span>
+          <span style="font-family:'Cinzel',serif;font-size:16px;color:${def.colorMid};letter-spacing:1px;">${def.name}</span>
+          <span style="margin-left:auto;font-size:15px;color:var(--gold);">Discovered</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:5px;line-height:1.5;">${note}</div>
+      </div>`;
+    }
     return `<div class="forge-disc-card" style="opacity:0.85;">
       <div style="display:flex;align-items:center;gap:6px;">
         <span style="font-size:19px;opacity:0.35;">${def.icon}</span>
@@ -5977,7 +6093,7 @@ function renderForgeDiscoveryList(){
     </div>`;
   }).join('');
   con.innerHTML=`<div class="hub-sec-title" style="margin-bottom:8px;">⚒ Combined Nodes</div>
-    <div style="font-size:15px;color:var(--text-dim);margin-bottom:10px;">Discover nodes in runs, then forge them here.</div>${cards}`;
+    <div style="font-size:15px;color:var(--text-dim);margin-bottom:10px;">Complete a recipe's discovery, buy its Discover card in a run, then forge it here.</div>${cards}`;
 }
 
 function renderForgeArcanumCenter(){
@@ -6007,13 +6123,13 @@ function renderForgeArcanumCenter(){
   }
 
   const repurchaseHTML=!hasArcaneNodeCopy()?`<div style="background:rgba(200,164,72,.08);border:1px solid var(--gold-dim);border-radius:4px;padding:10px 12px;max-width:360px;margin:0 auto 14px;text-align:center;">
-      <div style="font-size:15px;color:var(--text-dim);line-height:1.5;margin-bottom:8px;">No Arcane in inventory. Repurchase to plan and place it from Preparation. Consuming grants <b>+${ARCANE_NODE_CONSUME_BONUS}</b> permanent Arcane threshold.</div>
+      <div style="font-size:15px;color:var(--text-dim);line-height:1.5;margin-bottom:8px;">No Arcane in inventory. Repurchase to plan and place it from Preparation. Consuming grants <b>+${ARCANE_NODE_CONSUME_BONUS}</b> permanent Arcane threshold; the price rises ×${ARCANE_REBUY_GROWTH} each time it is consumed (row levels are kept).</div>
       <div class="mu-btn ${META.au>=shopPrice?'':'cant'}" onclick="hubBuyArcane()" style="display:inline-block;padding:6px 18px;">Repurchase Arcane — ${shopPrice.toLocaleString()} AU</div>
     </div>`:'';
 
   const oppRows=ARCANE_ROW_ORDER.filter(k=>ARCANE_OPPOSITION[k]).map(k=>{
     const opp=ARCANE_OPPOSITION[k],sur=getArcaneOppositionSurcharge(k);
-    return `<div class="arcanum-stat-row"><span style="color:${ARCANE_ROW_DEFS[k].color};">${ARCANE_ROW_DEFS[k].name}</span><span>Lv${rows[k]||0} <span style="color:#e05050;">−${sur} opp fuel</span></span></div>`;
+    return `<div class="arcanum-stat-row"><span style="color:${ARCANE_ROW_DEFS[k].color};">${ARCANE_ROW_DEFS[k].name}</span><span>Lv${rows[k]||0}${sur?` <span style="color:#e05050;">+${sur} fuel (opposed by ${ARCANE_ROW_DEFS[opp].name})</span>`:''}</span></div>`;
   }).join('');
 
   const hist=META.arcane.lastRunStats;
@@ -6056,27 +6172,20 @@ function renderForgeArcanumRows(){
     ARCANE_ROW_ORDER.map(rowKey=>{
       const def=ARCANE_ROW_DEFS[rowKey],lv=getArcaneRows()[rowKey]||0;
       if(lv>=5)return `<div class="arcanum-row-card" style="border-color:${def.color};opacity:0.7;"><div style="font-family:'Cinzel',serif;font-size:16px;color:${def.color};">${def.name} — MAX</div></div>`;
-      const needed=getArcaneFuelNeeded(rowKey);
-      if(!arcaneRowSlots[rowKey]||arcaneRowSlots[rowKey].length!==needed)
-        arcaneRowSlots[rowKey]=new Array(needed).fill(null);
-      const slots=arcaneRowSlots[rowKey];
+      const needed=getArcaneFuelNeeded(rowKey),have=Math.min(getArcaneFuel(rowKey),needed);
       const auCost=getArcaneAuCost(rowKey);
-      const fuelEl=def.fuelEl;
-      const slotsHTML=slots.map((filled,i)=>{
-        if(filled){
-          const pDef=NODE_DEFS[filled];
-          return `<div class="forge-slot filled" data-arcanerow="${rowKey}" data-slotidx="${i}" onclick="clearArcaneRowSlot('${rowKey}',${i})" style="width:44px;height:48px;border-color:${pDef.colorMid};"><div style="font-size:19px;">${pDef.icon}</div></div>`;
-        }
-        const wantEl=fuelEl==='combined'?null:fuelEl;
-        const avail=fuelEl==='combined'
-          ? COMBINED_LIST.filter(e=>(META.unlockedCombined||[]).includes(e)&&(META.nodeOwned[e]||0)-(onBoard[e]||0)>0).length
-          : (META.nodeOwned[wantEl]||0)-(onBoard[wantEl]||0);
-        const canSlot=forgeSelectedChip&&isValidArcaneFuel(rowKey,forgeSelectedChip)&&avail>0;
-        const icon=fuelEl==='combined'?'⚗':(NODE_DEFS[wantEl]?.icon||'?');
-        return `<div class="forge-slot ${canSlot?'ready':''}" data-arcanerow="${rowKey}" data-slotidx="${i}" onclick="assignArcaneRowSlot('${rowKey}',${i})" style="width:44px;height:48px;${canSlot?`box-shadow:0 0 8px ${def.color};`:''}"><div style="font-size:18px;opacity:0.5;">${icon}</div></div>`;
-      }).join('');
-      const hasTri=slots.some(s=>s&&NODE_DEFS[s]&&NODE_DEFS[s].tri);
-      const canUp=(hasTri||slots.every(s=>s))&&META.au>=auCost;
+      const fuelEl=def.fuelEl,wantEl=fuelEl==='combined'?null:fuelEl;
+      const spare=fuelEl==='combined'
+        ? COMBINED_LIST.filter(e=>(META.unlockedCombined||[]).includes(e)&&spareNodeCount(e)>0).length
+        : spareNodeCount(wantEl);
+      const icon=fuelEl==='combined'?'⚗':(NODE_DEFS[wantEl]?.icon||'?');
+      const canSlot=forgeSelectedChip&&isValidArcaneFuel(rowKey,forgeSelectedChip)&&spareNodeCount(forgeSelectedChip)>0;
+      const slotsHTML=Array.from({length:needed},(_,i)=>i<have
+        ? `<div class="forge-slot filled" title="Fuel deposited" style="width:44px;height:48px;border-color:${def.color};background:${def.color}22;"><div style="font-size:19px;">${icon}</div></div>`
+        : `<div class="forge-slot ${canSlot?'ready':''}" data-arcanerow="${rowKey}" data-slotidx="${i}" onclick="depositArcaneFuel('${rowKey}')" title="Select or drag a fuel node here — it is consumed on deposit" style="width:44px;height:48px;${canSlot?`box-shadow:0 0 8px ${def.color};`:''}"><div style="font-size:18px;opacity:0.5;">${icon}</div></div>`
+      ).join('');
+      const sur=getArcaneOppositionSurcharge(rowKey);
+      const canUp=have>=needed&&META.au>=auCost;
       return `<div class="arcanum-row-card" style="border-left:2px solid ${def.color};">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
           <span style="font-family:'Cinzel',serif;font-size:16px;color:${def.color};">${def.name}</span>
@@ -6084,7 +6193,7 @@ function renderForgeArcanumRows(){
         </div>
         <div style="font-size:13px;color:var(--text-lo);margin-bottom:6px;line-height:1.4;">${cn(def.desc)}</div>
         <div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;">${slotsHTML}</div>
-        <div style="font-size:13px;color:var(--text-dim);margin-bottom:4px;">Need ${needed} fuel${getArcaneOppositionSurcharge(rowKey)?` (+${getArcaneOppositionSurcharge(rowKey)} opposition)` :''} · Tri = super fuel</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:4px;">Fuel ${have}/${needed}${sur?` (+${sur} from opposition)`:''} · ${spare} spare · each deposit consumes the node${fuelEl==='combined'?' · a tri-node fills the row':''}</div>
         <div class="nu-btn ${canUp?'':'cant'}" onclick="${canUp?`hubUpgradeArcaneRow('${rowKey}')`:''}" style="font-size:15px;padding:4px 8px;">Upgrade — ${auCost} AU</div>
       </div>`;
     }).join('');
@@ -6198,7 +6307,7 @@ function updHubUI(){
   document.getElementById('h-board-btn').classList.toggle('cant',META.boardRange>=4||META.au<boardCost);
   ['ig','tr','vt','aq'].forEach(el=>{
     const lv=META.nodeLevels[el],lvcost=(lv*50);
-    const owned=META.nodeOwned[el]||0,buycost=Math.round(10*Math.pow(1.8,owned));
+    const owned=META.nodeOwned[el]||0,buycost=nodeBuyCost(el);
     document.getElementById(`h-${el}-lv`).textContent=`${lv} (${toRoman(lv)})`;
     document.getElementById(`h-${el}-own`).textContent=owned;
     document.getElementById(`h-${el}-lvcost`).textContent=lvcost;
@@ -6443,8 +6552,9 @@ function hubLevel(el){
   META.lastTend[el]=(META.lastTend[el]||0)+15;refreshHub();autoSave();
 }
 function hubBuyNode(el){
-  const owned=META.nodeOwned[el]||0,cost=Math.round(10*Math.pow(1.8,owned));
+  const owned=META.nodeOwned[el]||0,cost=nodeBuyCost(el);
   if(META.au<cost||owned>=META.nodeMax[el])return;
+  recordNodePurchase(el);
   META.au-=cost;META.nodeOwned[el]=(owned+1);
   if(el==='aq')setTimeout(()=>tutCheckTrigger('aqua-bought'),100);
   refreshHub();autoSave();
@@ -7107,7 +7217,7 @@ function updPulse(){
       const normal=Math.round(getNormalPulseDmgEst()),boosted=Math.round(ov.dmg);
       const spikeCount=ov.spikeN?` · ${ov.spikeN}/${ov.spikeTotal}`:'';
       let psHtml=`<span class="dr-compare">−${normal}</span><span class="dr-spike">−${boosted}</span> <span class="ps-meta">${ov.mult||1.5}×${spikeCount}</span>`;
-      if(R.pulse_t<9000)psHtml+=` <span class="ps-meta">· ${R.pulse_t.toFixed(1)}s</span>`;
+      if(!pulsesSuppressed())psHtml+=` <span class="ps-meta">· ${R.pulse_t.toFixed(1)}s</span>`;
       ps.innerHTML=psHtml;
     }
   }else{
@@ -7209,7 +7319,7 @@ const GLOSSARY=[
    body:'Two base elements fuse into a combined node with hybrid behavior. You must first discover the recipe (see Discovery), then forge it in The Forge by consuming one of each parent. Tri-nodes fuse three elements and require their dual recipes discovered first. Transmutation re-forges raise rank: Rank II (2 re-forges) grants +10% output; Rank III (4+) grants +20% output — the same bonus for every combined node.',
    svg:`<svg viewBox="0 0 240 70"><g font-family="Cinzel" font-size="9" text-anchor="middle"><circle cx="50" cy="35" r="14" fill="var(--ig-dim)" stroke="var(--ig-mid)"/><text x="50" y="39" fill="var(--ig-mid)">♂</text><text x="85" y="40" fill="var(--text-dim)" font-size="12">+</text><circle cx="120" cy="35" r="14" fill="var(--vt-dim)" stroke="var(--vt-mid)"/><text x="120" y="39" fill="var(--vt-mid)">☿</text><path d="M140 35 H170" stroke="var(--gold)" stroke-width="1.5"/><circle cx="200" cy="35" r="16" fill="var(--gold-dim)" stroke="var(--gold)"/><text x="200" y="39" fill="var(--gold)">🜎</text></g></svg>`},
   {id:'discovery',cat:'Nodes',icon:'♆',title:'Discovery',unlock:()=>(META.runs||0)>=2,
-   body:'Combined recipes are discovered by playing toward them: place both parent nodes touching each other on the board, and progress accrues per Cycle survived and per matching action. Track progress on The Forge tab. Adjacency is required — parents must be neighbors.',
+   body:'Combined recipes are discovered by playing toward them: place both parent nodes touching each other on the board, and progress accrues per Cycle survived and per matching action. Track progress on The Forge tab. Adjacency is required — parents must be neighbors. When a recipe’s discovery completes, its Discover card starts appearing in your run card offers; buy it with Arcane to unlock forging that node.',
    svg:`<svg viewBox="0 0 240 70"><g><polygon points="70,20 88,30 88,50 70,60 52,50 52,30" fill="var(--ig-dim)" stroke="var(--ig-mid)"/><polygon points="106,20 124,30 124,50 106,60 88,50 88,30" fill="var(--aq-dim)" stroke="var(--aq-mid)"/><text x="158" y="44" fill="var(--gold)" font-size="9" font-family="Cinzel">touching ✓</text></g></svg>`},
   {id:'adjacency',cat:'Nodes',icon:'☌',title:'Elemental Adjacency',unlock:()=>true,
    body:'Base nodes react to their neighbors — once you unlock each pairing in Preparation Meta Upgrades (80 AU each). Two opposed pairs — Ignis–Aqua and Terra–Ventus — suppress each other\u2019s generation but pay a board-wide dividend (mitigation, faster overflow-to-AU). The other four pairs are allied: each feeds the other\u2019s specialty (Ventus crits sooner near Ignis, Terra stores more near Aqua...), with Ignis pairings running hotter and riskier. Every effect is \u00b15% per adjacent node of the pair, stacking up to 3. Discovery of combined recipes (parents touching) is separate and does not require these unlocks.',
@@ -7594,6 +7704,9 @@ function loadFromSlot(i){
     const data=getSlotData(i);if(!data)return false;
     Object.assign(META,data);
     // Migration: fill in any META fields missing from older saves
+    if(!data.nodePriceStep)META.nodePriceStep=null; // don't inherit another slot's price steps
+    if(!Array.isArray(data.combinedDiscoverable))META.combinedDiscoverable=[]; // …or its discovery announcements
+    ensureNodePriceStep();
     if(!META.lessonsCompleted)META.lessonsCompleted=[];
     if(!Array.isArray(META.tendencySnapshots))META.tendencySnapshots=[];
     if(META.equippedSnapshot===undefined)META.equippedSnapshot=null;
@@ -7657,6 +7770,7 @@ function getMostRecentSlot(){
 }
 
 function continueRecentSlot(){
+  if(hasSuspendedRun())return; // resolve the suspended run first (title panel)
   const i=getMostRecentSlot();
   if(i===null)return;
   if(loadFromSlot(i))goHub();
@@ -7686,9 +7800,11 @@ function showTitleMenu(){
   document.getElementById('slot-actions').style.display='none';
   document.getElementById('slot-actions-empty').style.display='none';
   renderSlots();
+  renderSuspendedRunPanel();
 }
 
 function showSlotPicker(mode){
+  if(hasSuspendedRun())return; // resolve the suspended run first (title panel)
   titleSlotMode=mode;
   const menu=document.getElementById('title-menu');
   const slots=document.getElementById('title-slots');
@@ -7908,6 +8024,8 @@ function debugForceDisturbance(id){
   rollDisturbance(id);
 }
 
+// Keyboard shortcuts only act on a run that is on screen (not ended, not suspended at the title)
+function runLive(){return !!(R&&!R.dead&&!R.suspended);}
 let cheatBuffer='';
 function activateCheats(){
   cheatsActive=true;
@@ -8003,12 +8121,12 @@ document.addEventListener('keydown',e=>{
   // hotkeys so typing the code never disrupts a run. (Ending a run is button-only — no hotkey.)
   const buildingCheat=cheatBuffer.length>0&&'ATHANOR'.startsWith(cheatBuffer);
   if(!buildingCheat){
-    if(e.key==='p'||e.key==='P'){if(R&&!R.dead){R.paused?resumeRun():pauseRun();}}
+    if(e.key==='p'||e.key==='P'){if(runLive()){R.paused?resumeRun():pauseRun();}}
   }
-  if(e.key==='Escape'){if(R&&R.paused)resumeRun();}
-  if(e.key==='Enter'){if(R&&R.placing)closeInventory();}
+  if(e.key==='Escape'){if(runLive()&&R.paused)resumeRun();}
+  if(e.key==='Enter'){if(runLive()&&R.placing)closeInventory();}
   // Debug — manually roll a disturbance (Ctrl+D, requires an active run)
-  if((e.key==='d'||e.key==='D')&&e.ctrlKey&&R&&!R.dead){
+  if((e.key==='d'||e.key==='D')&&e.ctrlKey&&runLive()){
     e.preventDefault();
     rollDisturbance();
   }
@@ -8344,7 +8462,7 @@ function renderShopBuy(){
   if(!buyable.length){con.innerHTML='<div style="font-size:16px;color:var(--text-dim);">No nodes available to purchase.</div>';return;}
   buyable.forEach(([el,owned])=>{
     const def=NODE_DEFS[el];
-    const cost=Math.round((NODE_DEFS[el].combined?15:10)*Math.pow(1.8,owned));
+    const cost=nodeBuyCost(el);
     const canAfford=META.au>=cost;
     const div=document.createElement('div');div.className='shop-row';
     div.innerHTML=`<div class="shop-row-info"><div class="shop-row-name">${def.icon} ${def.name}</div><div class="shop-row-sub">Own: ${owned} · Cost: ${cost} AU</div></div><div class="shop-row-btn buy ${canAfford?'':'cant'}" onclick="shopBuyNode('${el}')">Buy</div>`;
@@ -8363,66 +8481,77 @@ function setupShopFurnace(){
   let shopGhost=null;
   const conEl=document.getElementById('shop-inventory-strip');
 
-  function startChipDrag(el,fromInventory,e){
-    e.preventDefault();shopDrag={active:true,el,fromInventory};
+  function startChipDrag(el,fromInventory,x,y){
+    shopDrag={active:true,el,fromInventory};
     if(!shopGhost){shopGhost=document.createElement('div');shopGhost.style.cssText='position:fixed;pointer-events:none;z-index:1001;display:flex;width:44px;height:44px;background:var(--bg2);border:1px solid var(--gold);border-radius:4px;align-items:center;justify-content:center;font-size:23px;';document.body.appendChild(shopGhost);}
     shopGhost.textContent=NODE_DEFS[el].icon;shopGhost.style.display='flex';
-    shopGhost.style.left=`${e.clientX-22}px`;shopGhost.style.top=`${e.clientY-22}px`;
+    shopGhost.style.left=`${x-22}px`;shopGhost.style.top=`${y-22}px`;
   }
-
-  if(conEl){
-    conEl.addEventListener('mousedown',e=>{
-      const chip=e.target.closest('.inv-node');if(!chip)return;
-      const el=chip.dataset.el;if(!el)return;
-      const fromInventory=chip.dataset.fromInventory==='true';
-      startChipDrag(el,fromInventory,e);
-    });
-  }
-  document.addEventListener('mousemove',e=>{
-    if(!shopDrag.active)return;
-    if(shopGhost){shopGhost.style.left=`${e.clientX-22}px`;shopGhost.style.top=`${e.clientY-22}px`;}
-    const fr=furnace.getBoundingClientRect();
-    const over=e.clientX>=fr.left&&e.clientX<=fr.right&&e.clientY>=fr.top&&e.clientY<=fr.bottom;
+  const overFurnace=(x,y)=>{const fr=furnace.getBoundingClientRect();return x>=fr.left&&x<=fr.right&&y>=fr.top&&y<=fr.bottom;};
+  function moveChipDrag(x,y){
+    if(shopGhost){shopGhost.style.left=`${x-22}px`;shopGhost.style.top=`${y-22}px`;}
+    const over=overFurnace(x,y);
     furnace.style.borderColor=over?'#c84020':'#4a2010';furnace.style.boxShadow=over?'0 0 18px rgba(200,80,20,.5)':'';
     if(glow)glow.style.opacity=over?'1':'0';
-  });
-  document.addEventListener('mouseup',e=>{
-    if(!shopDrag.active)return;
+  }
+  function dropChipDrag(x,y){
     const el=shopDrag.el;const fromInventory=shopDrag.fromInventory;
     shopDrag={active:false,el:null,fromInventory:false};
     if(shopGhost)shopGhost.style.display='none';
     furnace.style.borderColor='#4a2010';furnace.style.boxShadow='';if(glow)glow.style.opacity='0';
-    const fr=furnace.getBoundingClientRect();
-    if(e.clientX>=fr.left&&e.clientX<=fr.right&&e.clientY>=fr.top&&e.clientY<=fr.bottom){
-      let consumed=false;
-      if(fromInventory){
-        // Remove from R.inventory
-        const idx=R&&R.inventory.findIndex(item=>(item.el||item)===el);
-        if(idx!==-1){R.inventory.splice(idx,1);consumed=true;}
-      } else {
-        // Remove from R.placedNodes
-        const node=R&&R.placedNodes.find(n=>n.el===el);
-        if(node){R.placedNodes=R.placedNodes.filter(n=>n!==node);consumed=true;}
-      }
-      if(consumed&&(META.nodeOwned[el]||0)>0){
-        const gain=getNodeConsumeGain(el);
-        consumeOwnedNode(el,true);
-        updArcUI();updInventoryUI();drawBoard();
-        furnace.style.transform='scale(1.2)';setTimeout(()=>{furnace.style.transform='';},300);
-        if(flog){flog.textContent=`${NODE_DEFS[el].name} consumed · +${gain} threshold (now ${R.arcMax})`;flog.style.color='#ff8040';}
-        setTimeout(()=>{if(flog){flog.textContent='Drop a node here to consume it';flog.style.color='var(--text-dim)';}},3000);
-        const arcEl=document.getElementById('shop-arc-max');if(arcEl)arcEl.textContent=R.arcMax;
-        renderShopInventoryStrip();
-      }
+    if(!overFurnace(x,y))return;
+    let consumed=false;
+    if(fromInventory){
+      // Remove from R.inventory
+      const idx=R&&R.inventory.findIndex(item=>(item.el||item)===el);
+      if(idx!==-1){R.inventory.splice(idx,1);consumed=true;}
+    } else {
+      // Remove from R.placedNodes
+      const node=R&&R.placedNodes.find(n=>n.el===el);
+      if(node){R.placedNodes=R.placedNodes.filter(n=>n!==node);consumed=true;}
     }
+    if(consumed&&(META.nodeOwned[el]||0)>0){
+      const gain=getNodeConsumeGain(el);
+      consumeOwnedNode(el,true);
+      updArcUI();updInventoryUI();drawBoard();
+      furnace.style.transform='scale(1.2)';setTimeout(()=>{furnace.style.transform='';},300);
+      if(flog){flog.textContent=`${NODE_DEFS[el].name} consumed · +${gain} threshold (now ${R.arcMax})`;flog.style.color='#ff8040';}
+      setTimeout(()=>{if(flog){flog.textContent='Drop a node here to consume it';flog.style.color='var(--text-dim)';}},3000);
+      const arcEl=document.getElementById('shop-arc-max');if(arcEl)arcEl.textContent=R.arcMax;
+      renderShopInventoryStrip();
+    }
+  }
+  const chipAt=target=>{const chip=target.closest('.inv-node');return chip&&chip.dataset.el?chip:null;};
+  if(conEl){
+    conEl.addEventListener('mousedown',e=>{
+      const chip=chipAt(e.target);if(!chip)return;
+      e.preventDefault();startChipDrag(chip.dataset.el,chip.dataset.fromInventory==='true',e.clientX,e.clientY);
+    });
+    // Touch — same drag-to-furnace gesture on phones/tablets
+    conEl.addEventListener('touchstart',e=>{
+      const chip=chipAt(e.target);if(!chip||!e.touches.length)return;
+      e.preventDefault();const t=e.touches[0];
+      startChipDrag(chip.dataset.el,chip.dataset.fromInventory==='true',t.clientX,t.clientY);
+    },{passive:false});
+  }
+  document.addEventListener('mousemove',e=>{if(shopDrag.active)moveChipDrag(e.clientX,e.clientY);});
+  document.addEventListener('mouseup',e=>{if(shopDrag.active)dropChipDrag(e.clientX,e.clientY);});
+  document.addEventListener('touchmove',e=>{
+    if(!shopDrag.active||!e.touches.length)return;
+    e.preventDefault();const t=e.touches[0];moveChipDrag(t.clientX,t.clientY);
+  },{passive:false});
+  document.addEventListener('touchend',e=>{
+    if(!shopDrag.active)return;const t=e.changedTouches[0];dropChipDrag(t.clientX,t.clientY);
   });
+  document.addEventListener('touchcancel',()=>{if(shopDrag.active)dropChipDrag(-1,-1);});
 }
 
 
 function shopBuyNode(el){
   const owned=META.nodeOwned[el]||0;
-  const cost=Math.round((NODE_DEFS[el].combined?15:10)*Math.pow(1.8,owned));
+  const cost=nodeBuyCost(el);
   if(META.au<cost||owned>=(META.nodeMax[el]||1))return;
+  recordNodePurchase(el);
   META.au-=cost;META.nodeOwned[el]=(owned+1);
   R.inventory.push(el);
   log(`Purchased ${NODE_DEFS[el].name} — added to inventory.`,'g');
