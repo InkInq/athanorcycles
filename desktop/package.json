@@ -1,0 +1,20 @@
+{
+  "name": "athanor-cycles",
+  "productName": "Athanor Cycles",
+  "version": "0.1.2",
+  "description": "Athanor Cycles — a magical-academia roguelite incremental (standalone desktop build).",
+  "author": "InkInq",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "node scripts/prepare-game.js && node scripts/start-dev.js",
+    "icon": "electron scripts/make-icon.js",
+    "html5": "node scripts/package-html5.js",
+    "windows": "node scripts/build-windows.js",
+    "release": "node scripts/package-html5.js && node scripts/build-windows.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "44.5.1"
+  }
+}

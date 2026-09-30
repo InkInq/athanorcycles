@@ -1,0 +1,5 @@
+# Installed packages and build output — recreated by `npm install` / `npm run release`
+node_modules/
+dist/
+# Generated copy of ../athanor_cycles_va1.html (the file you actually edit)
+game/

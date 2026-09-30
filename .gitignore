@@ -1,0 +1,3 @@
+# Windows desktop build zips are ~100 MB (over GitHub's file limit) — build locally with
+# `npm run release` in desktop/ and upload straight to itch.io. The small HTML5 zips are committed.
+release/**/*-windows.zip

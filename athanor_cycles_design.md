@@ -1,8 +1,8 @@
 # Athanor Cycles — Design Document
 *Magical Academia Roguelite Incremental · v3.0*
 
-**Synced to build:** `athanor_cycles_va1.html` (v0.13 demo)  
-**Last updated:** July 2026  
+**Synced to build:** `athanor_cycles_va1.html` (Demo v0.1.b)  
+**Last updated:** September 2026  
 **Status:** Living design doc — update when mechanics change in the canonical HTML build.
 
 ---
@@ -210,6 +210,8 @@ Each Cycle requires **both** simultaneously:
 
 Between cycles: card selection overlay, placement window, next cycle begins with escalating thresholds and pulse pressure.
 
+**Design intent — placement window:** it opens after every Cycle, even when the inventory is empty. This is deliberate: it onboards players to board setup early, so repositioning feels natural once the board and the pressure grow.
+
 ---
 
 ## Stability & Overflow
@@ -247,6 +249,8 @@ Disturbances rolled at cycle boundaries may grant tendency toward their element.
 ---
 
 ## Lessons — Optional Encounters
+
+**Design intent:** Lessons are purposefully demanding — several are unlikely to be won at starting node levels when they first appear (Cycle 5). Mastery of all eight is a long-term goal, not an early-run expectation.
 
 **Schedule:** Every 3rd cycle from cycle 5 (5, 8, 11, 14…). Gold modal — accept or decline. Declined lessons leave the deck for this run. Multiple active lessons stack.
 

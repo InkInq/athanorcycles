@@ -21,15 +21,11 @@
 
 ## ITCH.IO DEMO LAUNCH
 
-- [x] Version label on title screen (`Demo v0.1.a`)
-- [x] ATHANOR cheat — ship as undiscoverable easter egg (no in-game hints)
-- [x] Mobile / touch layout (responsive CSS + tap / drag / pinch / Grimoire drawer)
-- [ ] Page label: Demo / Early Access / WIP
-- [ ] 5–8 screenshots + short cycle GIF
-- [ ] Store blurb + controls (mouse/touch, pan/zoom, click, drag placement)
-- [ ] Fonts: bundle or note CDN dependency
-- [ ] Upload HTML5 zip to itch
-- [ ] Smoke-test mobile embed (phone portrait + landscape)
+The full launch checklist (build, page, upload & test) now lives in **`ITCHIO_PAGE.md` §7**, alongside the page text and upload settings.
+
+- [x] Demo **v0.1.b** built — browser zip + standalone Windows build (Electron); see `desktop/README.md`
+- [x] Fonts bundled (offline-safe)
+- [ ] Remaining items: see `ITCHIO_PAGE.md` §7
 
 ---
 
