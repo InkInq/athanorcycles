@@ -566,6 +566,103 @@ body{
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
 /* ═══════════════════════════════════════════
+   MENU PASS — presentation for title, hub, overlays, results and settings (no rules changes)
+   ═══════════════════════════════════════════ */
+/* — Title — */
+#s-title{background:radial-gradient(ellipse at 50% 38%,#12101f 0%,#080810 62%);overflow:hidden;}
+#title-bg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+#s-title>div{position:relative;z-index:1;}
+.title-logo{margin-bottom:8px;filter:drop-shadow(0 0 22px rgba(200,164,72,.55));animation:gl 3.4s infinite alternate;}
+.title-logo .logo-ring{transform-box:fill-box;transform-origin:center;animation:logoSpin 80s linear infinite;}
+@keyframes logoSpin{to{transform:rotate(360deg);}}
+.t-main{background:linear-gradient(180deg,#f4dc98 0%,#c9a84c 52%,#8a6a28 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(200,164,72,.28));}
+.t-sub{color:var(--text-lo);letter-spacing:6px;}
+.t-cta{position:relative;animation:none;background:linear-gradient(180deg,rgba(200,164,72,.08),rgba(200,164,72,.02));border-radius:4px;transition:all .2s;}
+.t-cta:hover{border-color:var(--gold);color:var(--gold-hi);background:linear-gradient(180deg,rgba(200,164,72,.2),rgba(200,164,72,.06));box-shadow:0 0 24px rgba(200,164,72,.28),inset 0 0 16px rgba(200,164,72,.08);transform:translateY(-1px);}
+.t-cta:active{transform:translateY(0) scale(.99);}
+#title-continue-btn{border-color:var(--gold-soft);box-shadow:0 0 16px rgba(200,164,72,.18);}
+.save-slot{background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.01)),var(--bg2);}
+.save-slot:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.45);}
+/* — Hub — */
+.hub-top{background:linear-gradient(180deg,#11111f,#0b0b17);border-bottom:1px solid var(--border-gold);position:relative;padding:9px 20px;}
+.hub-top::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),var(--gold),var(--gold-dim),transparent);opacity:.5;}
+.hub-title{text-shadow:0 0 20px rgba(200,160,70,.35);}
+.hub-au-disp{padding:5px 14px;border:1px solid var(--gold-dim);border-radius:16px;background:rgba(200,164,72,.07);letter-spacing:1px;}
+.hub-au-disp span{font-weight:700;color:var(--gold-hi);font-size:17px;}
+.hub-begin{font-weight:700;background:linear-gradient(180deg,#3d2f0e,#241b07);box-shadow:0 0 14px rgba(200,164,72,.22);}
+.hub-begin:hover{background:linear-gradient(180deg,#5c4718,#3a2c0c);color:var(--gold-hi);box-shadow:0 0 26px rgba(200,164,72,.5);transform:translateY(-1px);}
+.hub-tabs{background:linear-gradient(180deg,#0e0e1c,#0b0b16);}
+.hub-tab{padding:10px 22px;}
+.hub-tab.active{background:linear-gradient(180deg,rgba(200,164,72,0),rgba(200,164,72,.1));text-shadow:0 0 12px rgba(200,164,72,.4);}
+@keyframes pageIn{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+.hub-page.active{animation:pageIn .28s ease-out;}
+.hub-sec-title{border-bottom-color:var(--border-gold);}
+.node-upgrade,.meta-upgrade,.forge-disc-card,.arcanum-row-card,.hub-card,.snap-card,.keep-card,.res-stat,.res-recap,.res-grad,.shop-row{background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.008)),var(--bg3);border-radius:5px;}
+.node-upgrade,.meta-upgrade,.forge-disc-card,.arcanum-row-card{transition:border-color .15s,box-shadow .15s;}
+.node-upgrade:hover,.meta-upgrade:hover,.forge-disc-card:hover,.arcanum-row-card:hover{border-color:var(--border-hi);box-shadow:0 3px 16px rgba(0,0,0,.4);}
+.nu-btn:hover,.mu-btn:hover,.kc-btn:hover{box-shadow:0 0 12px rgba(200,164,72,.18);}
+#hub-coach-slot.show{position:relative;margin:10px 16px 0;padding:10px 34px 10px 14px;background:linear-gradient(135deg,rgba(28,22,8,.96),rgba(10,9,6,.98));border:1px solid var(--gold-dim);border-radius:4px;}
+.hub-page .empty-note{display:block;padding:14px 12px;border:1px dashed var(--border);border-radius:5px;text-align:center;line-height:1.5;}
+/* — Overlays & card offers — */
+.ov-box{max-width:560px;padding:22px 26px;border-radius:8px;background:linear-gradient(180deg,#12121f,#0c0c18);border:1px solid var(--border-gold);box-shadow:0 12px 60px rgba(0,0,0,.65),0 0 44px rgba(200,164,72,.08);}
+#card-ov .ov-box{max-width:780px;}
+.ov-title{font-size:22px;letter-spacing:5px;text-shadow:0 0 18px rgba(200,164,72,.35);}
+.ov-sub{font-size:16px;margin-bottom:16px;}
+.ov-cards{gap:12px;align-items:stretch;margin-bottom:16px;}
+.ovc{--c:var(--gold);--cd:var(--gold-lo);width:150px;padding:0;display:flex;flex-direction:column;border-radius:7px;border:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,#161629,#0d0d1a);box-shadow:0 4px 16px rgba(0,0,0,.45);transition:transform .16s,box-shadow .16s,border-color .16s;}
+.ovc::before{height:3px;background:var(--c)!important;opacity:.9;}
+.ovc.tmp::after,.ovc.shop::after{content:none;}
+.ovc.tmp,.ovc.shop{border-color:rgba(255,255,255,.09);background:linear-gradient(180deg,#161629,#0d0d1a);}
+.ovc-art{height:68px;display:flex;align-items:center;justify-content:center;font-size:38px;line-height:1;color:var(--c);background:radial-gradient(ellipse at 50% 72%,var(--cd),transparent 72%);position:relative;}
+.ovc-tier{position:absolute;top:8px;left:9px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;color:var(--c);opacity:.9;}
+.ovc-body{padding:2px 10px 9px;flex:1;display:flex;flex-direction:column;}
+.ovc-nm{font-size:14px;text-align:center;margin-bottom:5px;}
+.ovc-ds{font-size:13px;line-height:1.4;-webkit-line-clamp:6;flex:1;}
+.ovc-tend{font-family:'Cinzel',serif;font-size:11px;color:var(--gold);letter-spacing:.5px;margin-top:4px;text-align:center;}
+.ovc-co{margin-top:7px;padding-top:6px;border-top:1px solid rgba(255,255,255,.08);text-align:center;font-size:13px;}
+.ovc:hover{transform:translateY(-6px);border-color:var(--c);box-shadow:0 12px 28px rgba(0,0,0,.55),0 0 24px -6px var(--c);}
+.ovc.no{opacity:.45;}
+.ovc.no .ovc-co{color:#e06a58;}
+.ov.show .ovc{animation:ovIn .34s cubic-bezier(.2,.9,.3,1.15) backwards;}
+.ov.show .ovc:nth-child(2){animation-delay:.05s;}.ov.show .ovc:nth-child(3){animation-delay:.1s;}.ov.show .ovc:nth-child(4){animation-delay:.15s;}.ov.show .ovc:nth-child(5){animation-delay:.2s;}
+/* — Lesson / Graduation windows — */
+#lesson-ov-box,#grad-offer-box{max-width:430px;padding:26px 30px 22px;text-align:center;box-shadow:0 10px 50px rgba(200,164,72,.22),inset 0 0 0 4px #0c0a02,inset 0 0 0 5px rgba(200,164,72,.3);}
+.less-ov-sigil{width:86px;height:86px;margin:0 auto 12px;border:1px solid rgba(200,164,72,.55);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:44px;line-height:1;color:var(--gold);background:radial-gradient(circle,rgba(200,164,72,.18),transparent 70%);box-shadow:0 0 26px rgba(200,164,72,.25),inset 0 0 14px rgba(200,164,72,.12);}
+.less-ov-title{font-size:21px;letter-spacing:4px;text-shadow:0 0 14px rgba(200,164,72,.35);}
+.less-ov-terms{display:flex;justify-content:center;gap:7px;flex-wrap:wrap;margin:-4px 0 18px;}
+.less-ov-term{font-family:'Cinzel',serif;font-size:13px;letter-spacing:1px;color:var(--gold-soft);border:1px solid rgba(200,164,72,.3);border-radius:12px;padding:3px 10px;background:rgba(200,164,72,.05);}
+.less-ov-term.new{color:var(--gold-hi);border-color:rgba(200,164,72,.6);}
+.less-ov-accept:hover{opacity:1;box-shadow:0 0 18px rgba(200,164,72,.45);}
+#grad-reward-ov .grad-reward-box{max-width:520px;box-shadow:0 10px 50px rgba(200,164,72,.3),inset 0 0 0 4px #0c0a02,inset 0 0 0 5px rgba(200,164,72,.3);}
+.grad-reward-card{min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;}
+.grad-reward-card.sealed{background:repeating-linear-gradient(45deg,rgba(200,164,72,.07) 0 6px,rgba(200,164,72,.02) 6px 12px);}
+.grad-reward-card.pickable:hover{transform:translateY(-5px);box-shadow:0 10px 26px rgba(0,0,0,.5),0 0 20px rgba(200,164,72,.3);}
+/* — Results — */
+#s-results{background:radial-gradient(ellipse at 50% 30%,#14121f 0%,#080810 65%);}
+.res-box{border-radius:8px;border-color:var(--border-gold);background:linear-gradient(180deg,#12121f,#0c0c18);box-shadow:0 12px 60px rgba(0,0,0,.6),0 0 44px rgba(200,164,72,.07);}
+.res-title{font-size:28px;letter-spacing:6px;text-shadow:0 0 20px rgba(200,164,72,.35);}
+.res-box.died .res-title{color:#e8705c;text-shadow:0 0 22px rgba(224,80,60,.4);}
+.res-stat.au{border-color:var(--gold-soft);background:linear-gradient(160deg,rgba(200,164,72,.16),rgba(200,164,72,.04)),var(--bg3);box-shadow:0 0 16px rgba(200,164,72,.15);}
+.res-stat.au .rs-v{color:var(--gold-hi);font-size:27px;}
+.rs-v{font-variant-numeric:tabular-nums;}
+.res-btn:hover{color:var(--gold-hi);box-shadow:0 0 24px rgba(200,164,72,.35);}
+#s-results.active .res-box{animation:ovIn .4s cubic-bezier(.2,.9,.3,1.1);}
+/* — Pause & settings — */
+.pause-box{border-radius:8px;border-color:var(--border-gold);background:linear-gradient(180deg,#12121f,#0c0c18);box-shadow:0 12px 60px rgba(0,0,0,.6);max-height:92vh;overflow-y:auto;min-width:320px;}
+.pause-title{font-size:21px;letter-spacing:5px;text-shadow:0 0 16px rgba(200,164,72,.35);}
+.pbtn{border-radius:4px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));}
+.pbtn:hover{background:linear-gradient(180deg,rgba(200,164,72,.16),rgba(200,164,72,.04));box-shadow:0 0 16px rgba(200,164,72,.2);}
+.set-h{font-family:'Cinzel',serif;font-size:13px;letter-spacing:2.5px;color:var(--gold-soft);text-transform:uppercase;margin:8px 0 1px;padding-bottom:3px;border-bottom:1px solid rgba(90,72,32,.35);}
+.set-h:first-child{margin-top:0;}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.set-lbl{font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;}
+.set-sl{display:flex;align-items:center;gap:7px;}
+.set-sl input[type=range]{width:100px;accent-color:var(--gold);cursor:pointer;}
+.set-val{font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:34px;text-align:right;}
+.set-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer;}
+@media (prefers-reduced-motion:reduce){.title-logo .logo-ring,.hub-page.active,.ov.show .ovc,#s-results.active .res-box{animation:none;}}
+
+/* ═══════════════════════════════════════════
    MOBILE / TOUCH LAYOUT
    ═══════════════════════════════════════════ */
 /* Drawn icons (see ico() in the script): sized by font-size, coloured by the text colour, with a soft glow */
@@ -729,11 +826,14 @@ body{
 
 <!-- TITLE -->
 <div class="screen active" id="s-title">
+  <canvas id="title-bg"></canvas>
   <div style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:720px;padding:0 20px;box-sizing:border-box;">
     <!-- Philosopher's Stone symbol -->
-    <div style="margin-bottom:8px;filter:drop-shadow(0 0 18px rgba(200,164,72,.5));animation:gl 3s infinite alternate;">
-      <svg viewBox="0 0 200 200" width="140" height="140" xmlns="http://www.w3.org/2000/svg" style="opacity:.85;">
+    <div class="title-logo">
+      <svg viewBox="-12 -12 224 224" width="156" height="156" xmlns="http://www.w3.org/2000/svg" style="opacity:.9;overflow:visible;">
         <defs><style>.ps{fill:none;stroke:#c8a448;stroke-width:2.2;}</style></defs>
+        <!-- Slowly turning tick ring -->
+        <g class="logo-ring"><circle cx="100" cy="100" r="105" fill="none" stroke="#c8a448" stroke-width="5" stroke-dasharray="1.5 9.5" opacity=".55"/></g>
         <!-- Outer circle: center 100,100 r=94 -->
         <circle class="ps" cx="100" cy="100" r="94"/>
         <!-- Triangle: apex top, base at y=155 -->
@@ -790,6 +890,7 @@ body{
     <div id="title-settings" style="display:none;flex-direction:column;align-items:center;gap:12px;opacity:0;transition:opacity .25s;">
       <div style="font-family:'Cinzel',serif;font-size:15px;letter-spacing:3px;color:var(--text-dim);">SETTINGS</div>
       <div style="display:flex;flex-direction:column;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:16px 20px;min-width:240px;">
+        <div class="set-h">Display</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Tooltip Opacity</div>
           <div style="display:flex;align-items:center;gap:7px;">
@@ -804,6 +905,7 @@ body{
             <span id="flt-opacity-title-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;">100%</span>
           </div>
         </div>
+        <div class="set-h">Audio</div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Sound</div><div style="display:flex;align-items:center;gap:7px;"><input type="range" class="vol-sfx" min="0" max="100" value="80" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setVolume('volSfx',this.value)"><span class="vol-sfx-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">80%</span></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Ambience</div><div style="display:flex;align-items:center;gap:7px;"><input type="range" class="vol-amb" min="0" max="100" value="50" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setVolume('volAmb',this.value)"><span class="vol-amb-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">50%</span></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Mute</div><input type="checkbox" class="audio-mute" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setMute(this.checked)"></div>
@@ -1089,6 +1191,7 @@ body{
         <div id="hub-save-btn" onclick="saveCurrentSlot()" style="font-family:'Cinzel',serif;font-size:16px;letter-spacing:1px;color:var(--gold);cursor:pointer;padding:5px 16px;border:1px solid var(--gold-dim);border-radius:3px;transition:all .15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--gold-dim)'">💾 Save Game</div>
         <div id="hub-save-info" style="font-family:'Cinzel',serif;font-size:16px;color:var(--text-lo);letter-spacing:1px;flex:1;text-align:right;transition:color .3s;"></div>
       </div>
+        <div class="set-h">Display</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
         <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Tooltip Opacity</div>
         <div style="display:flex;align-items:center;gap:7px;">
@@ -1103,6 +1206,7 @@ body{
           <span id="flt-opacity-val-hub" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">100%</span>
         </div>
       </div>
+        <div class="set-h">Audio</div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Sound</div><div style="display:flex;align-items:center;gap:7px;"><input type="range" class="vol-sfx" min="0" max="100" value="80" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setVolume('volSfx',this.value)"><span class="vol-sfx-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">80%</span></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Ambience</div><div style="display:flex;align-items:center;gap:7px;"><input type="range" class="vol-amb" min="0" max="100" value="50" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setVolume('volAmb',this.value)"><span class="vol-amb-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">50%</span></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Mute</div><input type="checkbox" class="audio-mute" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setMute(this.checked)"></div>
@@ -1249,9 +1353,11 @@ body{
 <!-- LESSON OFFER MODAL -->
 <div id="lesson-ov">
   <div id="lesson-ov-box">
+    <div class="less-ov-sigil" id="less-ov-sigil"></div>
     <div class="less-ov-title" id="less-ov-title">LESSON OFFERED</div>
     <div class="less-ov-school" id="less-ov-school">SCHOOL OF EVOCATION</div>
     <div class="less-ov-desc" id="less-ov-desc">A pulse of raw power tests your generation.</div>
+    <div class="less-ov-terms" id="less-ov-terms"></div>
     <div class="less-ov-btns">
       <button class="less-ov-accept" onclick="acceptLesson()">ACCEPT</button>
       <button class="less-ov-decline" onclick="declineLesson()">DECLINE</button>
@@ -1263,9 +1369,11 @@ body{
 <!-- GRADUATION OFFER MODAL -->
 <div id="grad-offer-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:201;display:none;align-items:center;justify-content:center;">
   <div id="grad-offer-box">
+    <div class="less-ov-sigil"><svg viewBox="0 0 200 200" width="56" height="56" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"><circle cx="100" cy="100" r="92"/><polygon points="100,12 176,152 24,152"/><rect x="56" y="88" width="88" height="64"/><circle cx="100" cy="120" r="31"/></g></svg></div>
     <div class="less-ov-title">GRADUATION</div>
     <div class="less-ov-school">CULMINATION OF STUDY</div>
     <div class="less-ov-desc">Your studies have reached their culmination. Accept the Graduation Challenge to prove your mastery — or decline to keep studying, surrendering one Lesson's worth of progress.</div>
+    <div class="less-ov-terms"><span class="less-ov-term new">Win · choose 1 of 3 rewards</span><span class="less-ov-term">Fail · progress resets</span><span class="less-ov-term">Decline · −34%</span></div>
     <div class="less-ov-btns">
       <button class="less-ov-accept" onclick="acceptGraduation()">ACCEPT</button>
       <button class="less-ov-decline" onclick="declineGraduation()">DECLINE</button>
@@ -1305,7 +1413,7 @@ body{
       <div class="res-col res-col-left">
         <div class="res-stats">
           <div class="res-stat"><div class="rs-l">Cycles Reached</div><div class="rs-v" id="res-cyc">0</div></div>
-          <div class="res-stat"><div class="rs-l">AU Earned</div><div class="rs-v" id="res-au">0</div><div class="rs-sub" id="res-au-sub"></div></div>
+          <div class="res-stat au"><div class="rs-l">AU Earned</div><div class="rs-v" id="res-au">0</div><div class="rs-sub" id="res-au-sub"></div></div>
           <div class="res-stat"><div class="rs-l">Cards Unlocked</div><div class="rs-v" id="res-cards-n">0</div><div class="rs-sub">this run</div></div>
           <div class="res-stat"><div class="rs-l">Lessons</div><div class="rs-v" id="res-less">0</div></div>
         </div>
@@ -1394,45 +1502,20 @@ body{
       <div class="pbtn" onclick="suspendRun()" title="Suspend this run and return to the title. Resuming costs AU; ending it costs 2 permanent max Arcane.">Return to Title</div>
     </div>
     <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;text-align:left;">
-      <div style="font-family:'Cinzel',serif;font-size:15px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;">Settings</div>
       <div style="display:flex;flex-direction:column;gap:9px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Tooltips</div>
-          <input type="checkbox" id="tooltips-toggle" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setTooltipsEnabled(this.checked)">
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;" id="tt-opacity-row">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Tooltip Opacity</div>
-          <div style="display:flex;align-items:center;gap:7px;">
-            <input type="range" id="tt-opacity-slider" min="0" max="100" value="100" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setTooltipOpacity(this.value)">
-            <span id="tt-opacity-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">100%</span>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Float Text</div>
-          <div style="display:flex;align-items:center;gap:7px;">
-            <input type="range" id="flt-opacity-slider" min="0" max="100" value="100" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setFltOpacity(this.value)">
-            <span id="flt-opacity-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">100%</span>
-          </div>
-        </div>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Sound</div><div style="display:flex;align-items:center;gap:7px;"><input type="range" class="vol-sfx" min="0" max="100" value="80" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setVolume('volSfx',this.value)"><span class="vol-sfx-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">80%</span></div></div>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Ambience</div><div style="display:flex;align-items:center;gap:7px;"><input type="range" class="vol-amb" min="0" max="100" value="50" style="width:100px;accent-color:var(--gold);cursor:pointer;" oninput="setVolume('volAmb',this.value)"><span class="vol-amb-val" style="font-family:'Cinzel',serif;font-size:15px;color:var(--gold);width:28px;text-align:right;">50%</span></div></div>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;"><div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Mute</div><input type="checkbox" class="audio-mute" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setMute(this.checked)"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Keep Running When Unfocused</div>
-          <input type="checkbox" id="run-unfocused-toggle" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setRunWhenUnfocused(this.checked)">
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Screen Shake</div>
-          <input type="checkbox" id="screen-shake-toggle" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setScreenShake(this.checked)">
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Visual Effects</div>
-          <input type="checkbox" id="effects-toggle" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setEffects(this.checked)">
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Fullscreen</div>
-          <input type="checkbox" id="fullscreen-toggle" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setFullscreen(this.checked)">
-        </div>
+        <div class="set-h">Audio</div>
+        <div class="set-row"><div class="set-lbl">Sound</div><div class="set-sl"><input type="range" min="0" max="100" value="80" class="vol-sfx" oninput="setVolume('volSfx',this.value)"><span class="set-val vol-sfx-val">80%</span></div></div>
+        <div class="set-row"><div class="set-lbl">Ambience</div><div class="set-sl"><input type="range" min="0" max="100" value="50" class="vol-amb" oninput="setVolume('volAmb',this.value)"><span class="set-val vol-amb-val">50%</span></div></div>
+        <div class="set-row"><div class="set-lbl">Mute</div><input type="checkbox" class="audio-mute" onchange="setMute(this.checked)"></div>
+        <div class="set-h">Display</div>
+        <div class="set-row"><div class="set-lbl">Tooltips</div><input type="checkbox" id="tooltips-toggle" checked onchange="setTooltipsEnabled(this.checked)"></div>
+        <div class="set-row" id="tt-opacity-row"><div class="set-lbl">Tooltip Opacity</div><div class="set-sl"><input type="range" min="0" max="100" value="100" id="tt-opacity-slider" oninput="setTooltipOpacity(this.value)"><span class="set-val" id="tt-opacity-val">100%</span></div></div>
+        <div class="set-row"><div class="set-lbl">Float Text</div><div class="set-sl"><input type="range" min="0" max="100" value="100" id="flt-opacity-slider" oninput="setFltOpacity(this.value)"><span class="set-val" id="flt-opacity-val">100%</span></div></div>
+        <div class="set-row"><div class="set-lbl">Visual Effects</div><input type="checkbox" id="effects-toggle" checked onchange="setEffects(this.checked)"></div>
+        <div class="set-row"><div class="set-lbl">Screen Shake</div><input type="checkbox" id="screen-shake-toggle" checked onchange="setScreenShake(this.checked)"></div>
+        <div class="set-row"><div class="set-lbl">Fullscreen</div><input type="checkbox" id="fullscreen-toggle" onchange="setFullscreen(this.checked)"></div>
+        <div class="set-h">Gameplay</div>
+        <div class="set-row"><div class="set-lbl">Keep Running When Unfocused</div><input type="checkbox" id="run-unfocused-toggle" onchange="setRunWhenUnfocused(this.checked)"></div>
       </div>
     </div>
   </div>
@@ -4929,6 +5012,14 @@ function rollLesson(forceId){
   document.getElementById('less-ov-title').textContent=def.name.toUpperCase();
   document.getElementById('less-ov-school').textContent=def.school.toUpperCase();
   document.getElementById('less-ov-desc').innerHTML=cn(def.desc);
+  // Sigil + the lesson's terms (reward now, graduation progress, mastery status)
+  const sig=document.getElementById('less-ov-sigil');if(sig)sig.innerHTML=ico(def.icon);
+  const terms=document.getElementById('less-ov-terms');
+  if(terms){
+    const au=3+Object.values(R.disturbances||{}).reduce((a,b)=>a+b,0);
+    const mastered=(META.lessonsCompleted||[]).includes(id);
+    terms.innerHTML=`<span class="less-ov-term">+${au} AU</span><span class="less-ov-term">+34% Graduation</span><span class="less-ov-term ${mastered?'':'new'}">${mastered?'Mastered':'New Mastery'}</span>`;
+  }
   document.getElementById('lesson-ov').classList.add('show');
   sfx('lessonOffer');
   R.selecting=true; // pause game
@@ -6015,11 +6106,12 @@ function endRun(died){
   autoSave();
   document.getElementById('res-title').textContent=died?'ARCANE DEPLETED':'RUN CONCLUDED';
   document.getElementById('res-sub').textContent=died?'The flame went out. The Grimoire remembers.':'The athanor cools. Your knowledge endures.';
-  document.getElementById('res-cyc').textContent=R.cycle;
-  document.getElementById('res-au').textContent=auEarned;
+  countUp('res-cyc',R.cycle);
+  countUp('res-au',auEarned);
+  {const box=document.querySelector('#s-results .res-box');if(box)box.classList.toggle('died',!!died);}
   document.getElementById('res-au-sub').textContent=`${R.cycle} cycles × 3${META.crucibleActive?' × 1.5':''}`;
-  document.getElementById('res-cards-n').textContent=R.thisRunCards.length;
-  document.getElementById('res-less').textContent=R.lessons;
+  countUp('res-cards-n',R.thisRunCards.length);
+  countUp('res-less',R.lessons);
   document.getElementById('res-gf').style.width=`${R.grad}%`;
   const gradsThisRun=META.grads-(R._gradsAtRunStart||0);
   document.getElementById('res-grad-txt').textContent=
@@ -6086,6 +6178,7 @@ function goScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   audioScreen(id);
+  if(id==='s-title')startTitleBackdrop();
   closeRpanel();
   if(id==='s-hub'&&isMobileLayout()&&META._dockCollapsed===undefined){
     META._dockCollapsed=true;applyDockState();
@@ -8603,6 +8696,21 @@ function showCards(openInvAfter,gradAfter){
   R.selecting=true;rerollCount=0;
   showCardsInner(openInvAfter);
 }
+// Card presentation helpers (offer overlay)
+function cardTierLabel(c){
+  if(c.isShop)return'SHOP';
+  if(c.temporary)return'REWARD';
+  if(c.isUnlock)return'DISCOVERY';
+  if(c.el==='ar')return'ARCANE';
+  const n=parseInt((String(c.id).match(/(\d+)$/)||[])[1]||'0',10);
+  return n===10?'PLACEMENT':n===9?'PINNACLE':n>=5?'TIER II':'TIER I';
+}
+function cardAccent(c){
+  if(c.el==='ar'||c.isShop)return['#b878e8','#2a0f48'];
+  if(c.temporary)return['#e8c870','#3a2c0c'];
+  const def=NODE_DEFS[c.el];
+  return def?[def.colorMid,def.colorDim]:['#c9a84c','#2a200a'];
+}
 function showCardsInner(openInvAfter){
   const cards=pickCards();const con=document.getElementById('ov-cards');con.innerHTML='';
   document.getElementById('ov-sub').textContent=cards.length?'The Grimoire stirs. Choose a card.':'All cards discovered.';
@@ -8623,7 +8731,9 @@ function showCardsInner(openInvAfter){
     d.className=`ovc ${elc[c.el]||''} ${can?'':'no'}`;
     const costLabel=isShop?'Free · Opens Shop':isTmp?'Free · Instant':can?`${c.cost} Arcane`:`Need ${c.cost-Math.round(R.arc)} more`;
     const tendMark=(['ig','tr','vt','aq'].includes(c.el)&&((wNow[c.el]||0)>=0.30||c.el===domEl))?`<div class="ovc-tend">⚖ Drawn by your ${cn(NODE_DEFS[c.el].name)} tendency</div>`:'';
-    d.innerHTML=`<div class="ovc-ic">${ico(c.icon)}</div><div class="ovc-nm">${c.name}</div><div class="ovc-ds">${cn(c.desc)}</div>${tendMark}<div class="ovc-co">${costLabel}</div>`;
+    const [accent,accentDim]=cardAccent(c);
+    d.style.setProperty('--c',accent);d.style.setProperty('--cd',accentDim);
+    d.innerHTML=`<div class="ovc-art"><span class="ovc-tier">${cardTierLabel(c)}</span>${ico(c.icon)}</div><div class="ovc-body"><div class="ovc-nm">${c.name}</div><div class="ovc-ds">${cn(c.desc)}</div>${tendMark}<div class="ovc-co">${costLabel}</div></div>`;
     if(can)d.onclick=()=>pickCard(c,openInvAfter);con.appendChild(d);
   });
   document.getElementById('card-ov').classList.add('show');
@@ -9089,6 +9199,62 @@ function ambTick(){
 }
 function audioScreen(id){AUDIO.mode={'s-title':'title','s-hub':'hub','s-run':'run','s-results':'results'}[id]||'title';ambTick();}
 
+// ── Menu presentation helpers ──
+// Numbers on the results screen roll up to their value (plain text when Visual Effects is off)
+function countUp(id,to,dur=900){
+  const el=document.getElementById(id);if(!el)return;
+  to=Math.round(to||0);
+  if(SETTINGS.effects===false||to<=0){el.textContent=to;return;}
+  el.textContent=0;
+  const t0=performance.now()+350; // let the results screen fade in first
+  const frame=now=>{
+    const k=Math.max(0,Math.min(1,(now-t0)/dur));
+    el.textContent=Math.round(to*(1-Math.pow(1-k,3)));
+    if(k<1)requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  setTimeout(()=>{el.textContent=to;},dur+900); // always lands on the true value, even if frames were throttled
+}
+// Title backdrop: the same alchemical circle + motes as the run board, drawn only while the title is showing
+let _titleRaf=null;
+function drawTitleBackdrop(){
+  _titleRaf=null;
+  const cv=document.getElementById('title-bg'),scr=document.getElementById('s-title');
+  if(!cv||!scr||!scr.classList.contains('active'))return;
+  const w=cv.clientWidth,h=cv.clientHeight;
+  if(!w||!h){_titleRaf=requestAnimationFrame(drawTitleBackdrop);return;}
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;}
+  const ctx=cv.getContext('2d'),still=SETTINGS.effects===false,t=still?0:Date.now()/1000;
+  ctx.clearRect(0,0,w,h);
+  const cx=w/2,cy=h*0.4,rad=Math.max(260,Math.min(w,h)*0.62);
+  const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,rad*1.1);
+  glow.addColorStop(0,'rgba(210,150,60,.10)');glow.addColorStop(0.5,'rgba(120,70,170,.045)');glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
+  ctx.save();ctx.translate(cx,cy);ctx.lineWidth=1.1;
+  const ring=(r,alpha)=>{ctx.strokeStyle=`rgba(200,164,72,${alpha})`;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();};
+  ring(rad,.10);ring(rad*0.94,.10);ring(rad*0.62,.06);
+  ctx.save();ctx.rotate(t*0.02);ctx.strokeStyle='rgba(200,164,72,.10)';ctx.beginPath();
+  for(let i=0;i<72;i++){const a=i/72*Math.PI*2,r0=rad*(i%6===0?0.895:0.915);ctx.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);ctx.lineTo(Math.cos(a)*rad*0.94,Math.sin(a)*rad*0.94);}
+  ctx.stroke();ctx.restore();
+  [[-0.011,0,.05],[0.008,Math.PI,.035]].forEach(([sp,off,al])=>{
+    ctx.save();ctx.rotate(t*sp+off);ctx.strokeStyle=`rgba(200,164,72,${al})`;ctx.beginPath();
+    for(let i=0;i<3;i++){const a=-Math.PI/2+i*Math.PI*2/3,px=Math.cos(a)*rad*0.895,py=Math.sin(a)*rad*0.895;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+    ctx.closePath();ctx.stroke();ctx.restore();
+  });
+  ctx.restore();
+  const frac=v=>v-Math.floor(v);
+  for(let i=0;i<34;i++){
+    const sx=frac(Math.sin(i*127.1)*43758.5453),sy=frac(Math.sin(i*311.7)*24634.6345),sp=0.005+frac(Math.sin(i*74.7)*9182.3)*0.011;
+    const px=frac(sx+Math.sin(t*0.1+i)*0.012)*w,py=h-frac(sy+t*sp)*h;
+    const al=0.05+0.14*(0.5+0.5*Math.sin(t*0.9+i*2.3));
+    ctx.fillStyle=`rgba(${i%4===0?'150,120,220':'220,180,90'},${al.toFixed(3)})`;
+    ctx.beginPath();ctx.arc(px,py,0.8+sx*1.2,0,Math.PI*2);ctx.fill();
+  }
+  if(!still)_titleRaf=requestAnimationFrame(drawTitleBackdrop);
+}
+function startTitleBackdrop(){if(!_titleRaf)_titleRaf=requestAnimationFrame(drawTitleBackdrop);}
+window.addEventListener('resize',startTitleBackdrop);
+
 // ── Standalone (desktop) build ──
 // The Electron wrapper exposes window.athanorDesktop via its preload script; in a browser it's absent.
 function isDesktopBuild(){return !!(window.athanorDesktop&&typeof window.athanorDesktop.quit==='function');}
@@ -9102,6 +9268,7 @@ function quitGame(){
 
 initTitleScreen();
 loadSettings();
+startTitleBackdrop();
 updRadar('hub-radar',{ig:1,vt:1,tr:1,aq:1});
 </script>
 </body>
