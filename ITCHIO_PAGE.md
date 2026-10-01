@@ -1,18 +1,18 @@
-# Athanor Cycles — itch.io Page Guide (Demo v0.1.c)
+# Athanor Cycles — itch.io Page Guide (Demo v0.1.d)
 
 Everything needed to set up (or update) the itch.io page: form fields, page text to paste, uploads, and the launch checklist.
 Edit freely — this is a working guide, not generated output.
 
 ---
 
-## 1. Release files (v0.1.c)
+## 1. Release files (v0.1.d)
 
 Both are built from the same game file (`athanor_cycles_va1.html`) — see `desktop/README.md` for how to rebuild.
 
 | Upload | File | Size | itch.io upload settings |
 |--------|------|------|--------------------------|
-| **Browser (HTML5)** | `release/v0.1.c/athanor-cycles-v0.1.c-html5.zip` (in the repo) | ~250 KB | Kind: HTML · tick **"This file will be played in the browser"** |
-| **Windows download** | `release/v0.1.c/athanor-cycles-v0.1.c-windows.zip` (built locally — too big for GitHub) | ~139 MB | Tick the **Windows** platform icon · leave "played in the browser" unticked |
+| **Browser (HTML5)** | `release/v0.1.d/athanor-cycles-v0.1.d-html5.zip` (in the repo) | ~250 KB | Kind: HTML · tick **"This file will be played in the browser"** |
+| **Windows download** | `release/v0.1.d/athanor-cycles-v0.1.d-windows.zip` (built locally — too big for GitHub) | ~139 MB | Tick the **Windows** platform icon · leave "played in the browser" unticked |
 
 **Embed options** (Edit game → Embed options), for the HTML5 upload:
 - Viewport: **1280 × 720** (the game needs at least ~960 × 600; the layout adapts above that)
@@ -46,7 +46,7 @@ Both are built from the same game file (`athanor_cycles_va1.html`) — see `desk
 
 **Cover image:** 630 × 500 — gold Cinzel wordmark + the athanor logo on the dark UI (the title screen works as a base; `desktop/build/icon.png` is the logo on its own).
 
-**Page label decision (Demo / Early Access / WIP):** the title screen already says *Demo v0.1.c*; pairing that with Release status **In development** reads as "free, evolving demo". Adjust if you'd rather call it Early Access.
+**Page label decision (Demo / Early Access / WIP):** the title screen already says *Demo v0.1.d*; pairing that with Release status **In development** reads as "free, evolving demo". Adjust if you'd rather call it Early Access.
 
 ---
 
@@ -69,7 +69,7 @@ A magical-academia roguelite incremental. Play in the browser or download for Wi
 Paste into the Description field (switch the editor to HTML):
 
 ```html
-<p><em>Demo v0.1.c — in development. Systems are playable; balance and polish are ongoing. Play in your browser or download for Windows. Pay what you want.</em></p>
+<p><em>Demo v0.1.d — in development. Systems are playable; balance and polish are ongoing. Play in your browser or download for Windows. Pay what you want.</em></p>
 
 <p><strong>Athanor Cycles</strong> is a magical-academia roguelite incremental. Arrange elemental nodes on a diamond board, generate Arcane — your health and your currency — and weather escalating pulses and disturbances. Survive as many Cycles as you can, take on Lessons, Graduate, and spend what you earned in the Grimoire to come back stronger.</p>
 
@@ -165,13 +165,13 @@ Aim for **16:9**, UI readable at gallery size, no cheat/debug overlays (don't ty
 ## 7. Launch checklist
 
 **Build**
-- [x] Version label on title screen — `Demo v0.1.c`
+- [x] Version label on title screen — `Demo v0.1.d`
 - [x] ATHANOR cheat ships as an undiscoverable easter egg (not mentioned on the page)
 - [x] Mobile / touch layout
 - [x] Fonts bundled into the game (works offline; no Google Fonts dependency)
 - [x] Drawn icons (no missing symbols on phones), board effects, synthesized sound + ambience with volume/mute settings
-- [x] HTML5 zip built — `release/v0.1.c/athanor-cycles-v0.1.c-html5.zip`
-- [x] Windows build — `release/v0.1.c/athanor-cycles-v0.1.c-windows.zip` (build locally: `desktop/README.md`)
+- [x] HTML5 zip built — `release/v0.1.d/athanor-cycles-v0.1.d-html5.zip`
+- [x] Windows build — `release/v0.1.d/athanor-cycles-v0.1.d-windows.zip` (build locally: `desktop/README.md`)
 - [ ] Merge the review-fix and release branches into `main`
 
 **Page**
@@ -189,4 +189,4 @@ Aim for **16:9**, UI readable at gallery size, no cheat/debug overlays (don't ty
 - [ ] Smoke-test the embed in Chrome (desktop)
 - [ ] Smoke-test on a real phone — portrait and landscape
 - [ ] Download the Windows zip from the page on a PC and run it (check the SmartScreen prompt, saves, Quit)
-- [ ] Optional: devlog post announcing v0.1.c
+- [ ] Optional: devlog post announcing v0.1.d

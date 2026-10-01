@@ -1,7 +1,7 @@
 # Athanor Cycles — Design Document
 *Magical Academia Roguelite Incremental · v3.0*
 
-**Synced to build:** `athanor_cycles_va1.html` (Demo v0.1.c)  
+**Synced to build:** `athanor_cycles_va1.html` (Demo v0.1.d)  
 **Last updated:** September 2026  
 **Status:** Living design doc — update when mechanics change in the canonical HTML build.
 
@@ -510,7 +510,7 @@ Documented for reference — **do not implement from this section without explic
 
 ---
 
-## Presentation (v0.1.c)
+## Presentation (v0.1.c–d)
 
 All art and audio are generated in code — the build ships no image or audio files.
 
@@ -518,6 +518,7 @@ All art and audio are generated in code — the build ships no image or audio fi
 - **Nodes:** a liquid-like level inside each diamond mirrors its main state (heat, stored amount, crit timer, charge, reserve); hidden under Veil.
 - **Relationships:** active Elemental Adjacency pairings are drawn as links (gold flowing = allied, dashed red = opposed); the Arcane Node shows threads to the nodes it observes.
 - **Effects (`FX`):** sparks on generation, crit rings, overload puffs, a board-plane shockwave when a pulse lands (blue when fully absorbed), gold rings on Cycle advance, node press pop, Arcane-bar hit shake. Cosmetic only; toggle: Settings → Visual Effects.
+- **Menus (v0.1.d):** title backdrop (`drawTitleBackdrop`, the board's circle and motes) with a turning logo ring; card offers framed in element colour with a tier label (`cardTierLabel`, `cardAccent`); Lesson and Graduation windows as framed "contracts" with the school sigil and their terms as chips; results numbers count up (`countUp`); settings grouped under Audio / Display / Gameplay. Presentation only — no rule changes.
 - **Audio (`AUDIO`, `SFX`):** Web Audio synthesis — 31 effects (Ignis click pitch rises with heat) and a generative ambience (drone, furnace breath, sparse pentatonic chimes, tension layer below 50% Arcane). Starts on first user gesture; Sound / Ambience / Mute in every settings panel.
 
 ---
