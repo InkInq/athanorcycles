@@ -4,12 +4,14 @@ const {app,BrowserWindow,Menu,ipcMain,shell}=require('electron');
 const path=require('path');
 
 app.setName('Athanor Cycles'); // saves (localStorage) live in %APPDATA%\Athanor Cycles
+const DEV=process.env.ATHANOR_DEV==='1'; // `npm start` sets this: keeps DevTools available
+// Development runs (npm start, automated tests) keep their own saves so they can never touch a player's
+if(DEV)app.setPath('userData',path.join(app.getPath('appData'),'Athanor Cycles (dev)'));
 
 // One running copy only — two windows would share (and overwrite) the same save slots
 if(!app.requestSingleInstanceLock()){app.quit();}
 
 let win=null;
-const DEV=process.env.ATHANOR_DEV==='1'; // `npm start` sets this: keeps DevTools available
 
 function createWindow(){
   win=new BrowserWindow({

@@ -133,7 +133,7 @@ Paste into the Description field (switch the editor to HTML):
 <ul>
   <li><strong>Saves</strong> — the browser version saves in your browser (clearing site data wipes it); the Windows version saves on your PC. The two don't share saves.</li>
   <li><strong>Windows download</strong> — unzip anywhere and run <code>AthanorCycles.exe</code>, or install through the itch.io app. Windows may show "Windows protected your PC" because the game isn't code-signed yet — choose <em>More info → Run anyway</em>.</li>
-  <li>Works offline once loaded (fonts are built in). No audio yet.</li>
+  <li>Works offline once loaded (fonts are built in). Sound and ambience are synthesized in-game — volume and mute are in Settings.</li>
   <li>Dense systems; early runs teach by doing — the Glossary helps.</li>
 </ul>
 
