@@ -562,6 +562,8 @@ body{
 /* ═══════════════════════════════════════════
    MOBILE / TOUCH LAYOUT
    ═══════════════════════════════════════════ */
+/* Drawn icons (see ico() in the script): sized by font-size, coloured by the text colour, with a soft glow */
+.gico{width:1em;height:1em;display:inline-block;vertical-align:-0.13em;overflow:visible;filter:drop-shadow(0 0 .18em currentColor);}
 #rpanel-toggle,#rpanel-backdrop{display:none;}
 #board-canvas{touch-action:none;}
 #hub-board-canvas{touch-action:none;}
@@ -1474,6 +1476,56 @@ function cn(text){
   return s;
 }
 // ═══════════════════════════════════════════
+// DRAWN ICONS — vector line art keyed by the glyph character used in NODE_DEFS / CARDS / DISTURBANCE_DEFS.
+// The alchemical glyphs (U+1F700 block) are missing from many phone fonts and render as empty boxes, so
+// every icon is drawn instead: drawGlyph() on canvases, ico() as inline SVG in HTML. Each icon lives in a
+// 100×100 box: `d` = stroked paths, `f` = filled paths. Unknown glyphs fall back to plain text.
+// ═══════════════════════════════════════════
+const _circ=(cx,cy,r)=>`M${cx-r} ${cy} a${r} ${r} 0 1 0 ${2*r} 0 a${r} ${r} 0 1 0 ${-2*r} 0`;
+const ICON_PATHS={
+  // Base elements — the classical triangles
+  '🜂':{d:['M50 14 L88 80 L12 80 Z']},                                  // Ignis (fire)
+  '🜄':{d:['M12 20 L88 20 L50 86 Z']},                                  // Aqua (water)
+  '🜁':{d:['M50 14 L88 80 L12 80 Z','M19 54 L81 54']},                  // Ventus (air)
+  '🜃':{d:['M12 20 L88 20 L50 86 Z','M19 46 L81 46']},                  // Terra (earth)
+  // Dual nodes
+  '🜎':{d:['M50 50 L80 90 L20 90 Z','M34 40 c-7 -7 7 -12 0 -20','M50 38 c-7 -8 7 -14 0 -24','M66 40 c-7 -7 7 -12 0 -20']}, // Vapor — fire under rising steam
+  '🜿':{d:[_circ(50,50,34),'M16 50 L84 50']},                           // Salt — the alchemical salt sign
+  '🜑':{d:[_circ(40,60,24),'M57 43 L84 16','M62 16 L84 16 L84 38']},    // Ferrum — iron (Mars)
+  '🜊':{d:['M50 10 L85 70 L15 70 Z','M15 30 L85 30 L50 90 Z']},         // Anima — fire and water united
+  '🜇':{d:['M20 20 H80 V80 H20 Z','M20 20 L80 80','M80 20 L20 80']},    // Cinis — calcined ash
+  '🜈':{d:['M50 10 L50 90','M15.4 30 L84.6 70','M15.4 70 L84.6 30','M41 20 L50 29 L59 20','M41 80 L50 71 L59 80']}, // Glacii — ice crystal
+  // Tri nodes
+  '🜒':{d:['M50 8 L61 39 L92 50 L61 61 L50 92 L39 61 L8 50 L39 39 Z'],f:[_circ(50,50,6)]}, // Impetus — burst
+  '🜍':{d:[_circ(50,50,36),'M24 42 q6.5 -9 13 0 t13 0 t13 0 t13 0','M24 60 q6.5 -9 13 0 t13 0 t13 0 t13 0']}, // Aestus — tide
+  '🜔':{d:['M50 41 L50 17','M58 55 L79 71','M42 55 L21 71',_circ(50,50,9)],f:[_circ(50,11,5.5),_circ(84,75,5.5),_circ(16,75,5.5)]}, // Juncus — junction
+  '🜐':{d:['M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z','M15 58 L85 58','M32 73 L68 73']}, // Ceptus — reservoir
+  // Board-wide / Arcane sigil (board disturbances, Arcane cards)
+  '🜀':{d:[_circ(50,50,26),'M50 6 L50 20','M50 80 L50 94','M6 50 L20 50','M80 50 L94 50'],f:[_circ(50,50,6)]},
+};
+const _iconPath2D={};
+// Canvas: draw the icon for glyph `ch` centred at (x,y) in a size×size box. Honors the context's shadow settings.
+function drawGlyph(ctx,ch,x,y,size,color){
+  const def=ICON_PATHS[ch];
+  if(!def){ // not a drawn icon (e.g. the Arcane α) — plain text
+    ctx.font=`${Math.round(size*0.92)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle=color;ctx.fillText(ch||'',x,y);return;
+  }
+  const p=_iconPath2D[ch]||(_iconPath2D[ch]={s:new Path2D(def.d.join(' ')),f:def.f?new Path2D(def.f.join(' ')):null});
+  ctx.save();
+  ctx.translate(x-size/2,y-size/2);ctx.scale(size/100,size/100);
+  ctx.lineWidth=Math.max(7,140/size);ctx.lineJoin='round';ctx.lineCap='round'; // never thinner than ~1.4px on screen
+  ctx.strokeStyle=color;ctx.stroke(p.s);
+  if(p.f){ctx.fillStyle=color;ctx.fill(p.f);}
+  ctx.restore();
+}
+// HTML: inline SVG sized by the surrounding font-size (1em) and coloured by currentColor. Text fallback as above.
+function ico(ch){
+  const def=ICON_PATHS[ch];
+  if(!def)return ch||'';
+  return `<svg class="gico" viewBox="0 0 100 100" aria-hidden="true"><path d="${def.d.join(' ')}" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>${def.f?`<path d="${def.f.join(' ')}" fill="currentColor"/>`:''}</svg>`;
+}
+// ═══════════════════════════════════════════
 // DISTURBANCES — escalating cursed modifiers
 // Each has sev(stacks) returning the severity magnitude at a given stack count.
 // el: elemental disturbances grant tendency toward that element when rolled; 'board' grants none.
@@ -2357,7 +2409,7 @@ function setupBoardTouch(){
         dragState.fromBoard=true;dragState.fromNode=node;
         R.placedNodes=R.placedNodes.filter(n=>n!==node);
         dragGhost.style.display='flex';
-        document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[node.el].icon;
+        document.getElementById('drag-ghost-icon').innerHTML=ico(NODE_DEFS[node.el].icon);
         document.getElementById('drag-ghost-name').textContent=NODE_DEFS[node.el].name;
         moveDragGhost(t.clientX,t.clientY);drawBoard();
         touchBoard.mode='drag';
@@ -2456,6 +2508,23 @@ function collectActiveChannelLinks(){
     seen.add(k);
     links.push({na,nb,...opt});
   };
+  // Elemental Adjacency — every ACTIVE (unlocked) pairing between neighbouring base nodes is shown:
+  // a soft gold flowing link for allied pairs, a dashed red one for opposed pairs. Hidden under Static.
+  if(disturbanceSev('static')<=0){
+    const BASE=['ig','tr','vt','aq'];
+    R.placedNodes.forEach(n=>{
+      if(!BASE.includes(n.el))return;
+      getAdjacentNodes(n).forEach(m=>{
+        if(!BASE.includes(m.el)||m.el===n.el||!adjPairUnlocked(n.el,m.el))return;
+        const pair=ADJ_PAIR_META.find(p=>p.key===adjPairKey(n.el,m.el));
+        const opposed=!!pair&&pair.kind==='Opposed';
+        add(n,m,{color:opposed?'#e06078':'#c8a448',intensity:0.2,kind:'adj',dashed:opposed,animate:!opposed});
+      });
+    });
+    // Arcane observance — faint threads from the Arcane node to each node it is working
+    const arNode=getArcanumNode();
+    if(arNode)getObservedNodes(arNode).forEach(n=>add(arNode,n,{color:NODE_DEFS.ar.colorMid,intensity:0.2,kind:'obs',dashed:true}));
+  }
   if(R.cardFlags.ig._calcify){
     R.placedNodes.filter(n=>n.el==='ig').forEach(ig=>{
       getAdjacentNodes(ig).filter(m=>m.el==='tr').forEach(tr=>{
@@ -2539,14 +2608,47 @@ function renderChannelLinks(ctx,links){
     });
   });
 }
+// ── Board backdrop ── a warm glow under the sigil, a faint alchemical circle laid on the board plane
+// (slowly turning tick ring + the athanor triangle), and a few drifting motes. Cosmetic only.
+function drawBoardBackdrop(ctx,w,h){
+  const c=gridToPixel(0,0),cz=CELL*view.zoom,t=Date.now()/1000;
+  const rad=cz*(getBoardRange()*1.5+1.25);
+  const glow=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,rad*1.3);
+  glow.addColorStop(0,'rgba(210,150,60,.085)');glow.addColorStop(0.55,'rgba(120,70,170,.04)');glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
+  ctx.save();
+  ctx.translate(c.x,c.y);ctx.scale(1,2/3); // lay the circle on the iso board plane (grid is 0.6 wide : 0.4 tall)
+  ctx.strokeStyle='rgba(200,164,72,.11)';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.arc(0,0,rad,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(0,0,rad*0.93,0,Math.PI*2);ctx.stroke();
+  ctx.save();ctx.rotate(t*0.025);
+  ctx.beginPath();
+  for(let i=0;i<60;i++){const a=i/60*Math.PI*2,r0=rad*(i%5===0?0.885:0.905);ctx.moveTo(Math.cos(a)*r0,Math.sin(a)*r0);ctx.lineTo(Math.cos(a)*rad*0.93,Math.sin(a)*rad*0.93);}
+  ctx.stroke();ctx.restore();
+  ctx.save();ctx.rotate(-t*0.012);ctx.strokeStyle='rgba(200,164,72,.055)';
+  ctx.beginPath();
+  for(let i=0;i<3;i++){const a=-Math.PI/2+i*Math.PI*2/3,px=Math.cos(a)*rad*0.885,py=Math.sin(a)*rad*0.885;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath();ctx.stroke();ctx.restore();
+  ctx.restore();
+  // drifting motes (deterministic from time — no state to keep)
+  const frac=v=>v-Math.floor(v);
+  for(let i=0;i<26;i++){
+    const sx=frac(Math.sin(i*127.1)*43758.5453),sy=frac(Math.sin(i*311.7)*24634.6345),sp=0.006+frac(Math.sin(i*74.7)*9182.3)*0.012;
+    const px=frac(sx+Math.sin(t*0.11+i)*0.012)*w,py=h-frac(sy+t*sp)*h;
+    const a=0.05+0.13*(0.5+0.5*Math.sin(t*0.9+i*2.3));
+    ctx.fillStyle=`rgba(${i%4===0?'150,120,220':'220,180,90'},${a.toFixed(3)})`;
+    ctx.beginPath();ctx.arc(px,py,(0.7+sx*1.1)*Math.min(1.4,view.zoom),0,Math.PI*2);ctx.fill();
+  }
+}
 function drawBoard(){
   if(!boardCtx)return;
   boardCtx.clearRect(0,0,boardCanvas.width,boardCanvas.height);
+  drawBoardBackdrop(boardCtx,boardCanvas.width,boardCanvas.height);
   const range=getBoardRange();
   for(let q=-range;q<=range;q++){for(let r=-range;r<=range;r++){
     const{x,y}=gridToPixel(q,r);
     if(x<-CELL*2||x>boardW+CELL*2||y<-CELL*2||y>boardCanvas.height+CELL*2)continue;
-    drawDiamondOutline(boardCtx,x,y,CELL*view.zoom*0.55,CELL*view.zoom*0.38,'rgba(255,255,255,.04)');
+    drawDiamondOutline(boardCtx,x,y,CELL*view.zoom*0.55,CELL*view.zoom*0.38,'rgba(200,170,110,.075)');
   }}
   if(R&&R.placing){
     const adj=getValidDropPositions(dragState.fromNode);
@@ -2643,6 +2745,58 @@ function fillNodeName(ctx,text,x,y,hw,hh,yOff,basePx){
   ctx.font=`600 ${fs}px Cinzel,serif`;
   ctx.fillText(label,x,y);
 }
+// ── Node "level" visual ── a liquid-like fill inside each diamond that mirrors the node's main state
+// (heat, stored amount, crit timer, charge…). Purely cosmetic; hidden under Veil like the other readouts.
+function nodeLevel(node){
+  const el=node.el,s=node.state||{},lv=k=>lvMult(META.nodeLevels[k]||1);
+  const flags=(R&&R.cardFlags[el])||{};
+  switch(el){
+    case 'ig':{
+      if(s.overloaded)return{pct:(s.cool||0)/(flags._fast?2.6:4.8),color:'#6a6a88'};
+      const p=(s.heat||0)/(flags._bigThresh?115:100);
+      return{pct:p,color:p>0.85?'#ffe6a8':p>0.6?'#ffa050':null};
+    }
+    case 'tr':return{pct:(s.stored||0)/(getNodeCap()*(1+((R&&R.cardFlags.tr._nourish)?0.10:0.05)*adjStacks(node,'aq')))};
+    case 'vt':{
+      if(s.crit)return{pct:1,color:'#d8ffc0'};
+      let vi=s.interval||4.0;if(R&&R.cardFlags.vt._updraft)vi=Math.max(1.5,vi-(s._updraftBonus||0));vi*=(1-0.05*adjStacks(node,'ig'));
+      return{pct:((s.t||0)%vi)/vi};
+    }
+    case 'aq':return{pct:0.42,wave:1.8}; // always running — a steady, rippling pool
+    case 'ar':return s.stressed?{pct:(s.cool||0)/10,color:'#6a6a88'}:{pct:(s.stress||0)/100};
+    case 'vp':return s.overloaded?{pct:(s.cool||0)/7,color:'#6a6a88'}:{pct:(s.heat||0)/75,color:s.crit?'#ffe0b0':null};
+    case 'sl':return{pct:(s.stored||0)/(180*lv('sl'))};
+    case 'fe':return s.burnout?{pct:(s.cool||0)/7,color:'#6a6a88'}:{pct:(s.heat||0)/60,color:(s.heat||0)>42?'#ff8040':null};
+    case 'an':return{pct:Math.min(1,(s.idle_t||0)/15)};
+    case 'ci':return{pct:(s.stored||0)/(200*lv('ci')),color:s.crit?'#f0f890':null};
+    case 'gl':return s.crystal?{pct:(s.crystal_t||0)/(8+lv('gl')*2),color:'#bff0ff'}:{pct:((s.t||0)%4.0)/4.0};
+    case 'im':return{pct:s.charge||0,color:(s.charge||0)>0.75?'#ffb060':null};
+    case 'ae':return{pct:Math.min(1,(s.bonus||0)/3),wave:1.4};
+    case 'ju':return{pct:Math.min(1,s._pulseFlash||0)};
+    case 'ce':return{pct:(s.reserve||0)/(s.reserve_cap||300)};
+  }
+  return null;
+}
+function drawNodeLevelFill(ctx,x,y,hw,hh,node,def){
+  if(!R||hasDisturbance('veil'))return;
+  const info=nodeLevel(node);if(!info)return;
+  const pct=Math.max(0,Math.min(1,info.pct||0));
+  if(pct<0.015)return;
+  const t=Date.now()/1000,amp=Math.min(hh*0.07,2.6*view.zoom)*(info.wave||1)*(pct>0.97?0.3:1);
+  const top=y+hh-2*hh*pct,phase=node.q*1.7+node.r*0.9;
+  const wave=i=>top+Math.sin(i*0.85+t*2.1+phase)*amp+Math.sin(i*0.4-t*1.3+phase)*amp*0.5;
+  ctx.save();
+  ctx.beginPath();ctx.moveTo(x,y-hh);ctx.lineTo(x+hw,y);ctx.lineTo(x,y+hh);ctx.lineTo(x-hw,y);ctx.closePath();ctx.clip();
+  ctx.beginPath();ctx.moveTo(x-hw,y+hh+2);
+  for(let i=0;i<=18;i++)ctx.lineTo(x-hw+2*hw*i/18,wave(i));
+  ctx.lineTo(x+hw,y+hh+2);ctx.closePath();
+  const c=info.color||def.colorMid,g=ctx.createLinearGradient(0,top,0,y+hh);
+  g.addColorStop(0,rgbaHex(c,0.36));g.addColorStop(1,rgbaHex(info.color||def.color,0.08));
+  ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();for(let i=0;i<=18;i++){const px=x-hw+2*hw*i/18;i?ctx.lineTo(px,wave(i)):ctx.moveTo(px,wave(i));}
+  ctx.strokeStyle=rgbaHex(c,0.6);ctx.lineWidth=Math.max(1,view.zoom);ctx.stroke();
+  ctx.restore();
+}
 function drawNodeDiamond(ctx,x,y,el,node){
   const def=NODE_DEFS[el];const hw=CELL*view.zoom*0.52,hh=CELL*view.zoom*0.36;
   if(!def)return;
@@ -2658,17 +2812,19 @@ function drawNodeDiamond(ctx,x,y,el,node){
   ctx.closePath();ctx.fillStyle=grad;ctx.fill();
   ctx.strokeStyle=isOverloaded?'#2a2a3a':isCrit?def.colorMid:def.color;ctx.lineWidth=isCrit?2:1.5;ctx.stroke();
   ctx.beginPath();ctx.moveTo(x,y-hh);ctx.lineTo(x+hw,y);ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.stroke();
+  drawNodeLevelFill(ctx,x,y,hw,hh,node,def);
   const cz=CELL*view.zoom;
   // Icon — larger, glows based on active state
   const s2=node.state||{};
   const isActive=(el==='ig'&&!isOverloaded&&(s2.heat||0)>20)||(el==='vt'&&s2.crit)||(el==='tr'&&(s2.stored||0)>10)||(el==='aq');
   const iconSize=isCrit?cz*0.34:isActive?cz*0.31:cz*0.27;
   const glowStrength=isCrit?28:isActive?18:8;
-  ctx.font=`${Math.round(iconSize)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.globalAlpha=isOverloaded?0.25:1;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.globalAlpha=isOverloaded?0.3:1;
   ctx.shadowColor=isCrit?def.colorMid:def.color;
   ctx.shadowBlur=isOverloaded?0:glowStrength;
-  ctx.fillText(def.icon,x,y-cz*0.04);
+  drawGlyph(ctx,def.icon,x,y-cz*0.07,iconSize*0.95,isOverloaded?'#77778a':isCrit?'#ffffff':def.colorMid);
+  ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.globalAlpha=1;ctx.shadowBlur=0;
   ctx.fillStyle=isOverloaded?'#555':def.colorMid;
   fillNodeName(ctx,def.name,x,y+cz*0.14,hw,hh,cz*0.14,cz*0.078);
@@ -2782,15 +2938,17 @@ function drawCombinedNodeDiamond(ctx,x,y,el,node){
   ctx.strokeStyle=borderCol;ctx.lineWidth=borderW;ctx.stroke();
   ctx.beginPath();ctx.moveTo(x,y-hh);ctx.lineTo(x+hw,y);
   ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.stroke();
+  drawNodeLevelFill(ctx,x,y,hw,hh,node,def);
 
   // ── Icon ──
   const iconSize=isCrystal?cz*0.36:isNearBurst||isCrit?cz*0.34:isActive2?cz*0.30:cz*0.25;
   const glowStr=isCrystal?44:isNearBurst?36:isCrit?32:isActive2?20:8;
-  ctx.font=`${Math.round(iconSize)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.globalAlpha=isBurnout?0.15:isOverloaded?0.3:1;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.globalAlpha=isBurnout?0.2:isOverloaded?0.3:1;
   ctx.shadowColor=isCrystal?'#78d8f0':isNearBurst?'#ff8040':isCrit?def.colorMid:def.color;
   ctx.shadowBlur=isBurnout||isOverloaded?0:glowStr;
-  ctx.fillText(def.icon,x,y-cz*0.04);
+  drawGlyph(ctx,def.icon,x,y-cz*0.07,iconSize*0.95,isBurnout?'#885050':isOverloaded?'#77778a':isCrystal?'#c8f4ff':isNearBurst?'#ffb070':isCrit?'#ffffff':def.colorMid);
+  ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.globalAlpha=1;ctx.shadowBlur=0;
 
   // ── Name ──
@@ -2927,7 +3085,7 @@ function updNodeTooltip(node){
   if(!def)return; // unknown element — no tooltip
   const lv=META.nodeLevels[el]||1;
   const s=node.state||{};const flags=R.cardFlags[el]||{};
-  document.getElementById('nt-icon').textContent=def.icon;
+  document.getElementById('nt-icon').innerHTML=ico(def.icon);
   document.getElementById('nt-name').textContent=def.name;
   document.getElementById('nt-name').style.color=def.colorMid;
   document.getElementById('nt-lv').textContent=(()=>{const e=getEffectiveLv(el);return e>lv?`Level ${e} (${toRoman(e)}) · +${e-lv} this run`:`Level ${lv} (${toRoman(lv)})`;})();
@@ -3157,7 +3315,7 @@ function updNodeTooltip(node){
     :rowData.map(([l,v])=>`<div class="nt-row">${cn(l)}<span>${cn(v)}</span></div>`).join('');
   document.getElementById('nt-state').innerHTML=hasDisturbance('veil')?`<span style="color:#9060c0;font-style:italic;">State obscured by Veil</span>`:cn(stateHTML);
   const activeCards=META.unlockedCards.filter(c=>c.el===el);
-  document.getElementById('nt-cards').innerHTML=activeCards.length?`<span style="color:var(--text-lo)">Cards: </span>`+activeCards.map(c=>`<span style="color:var(--gold-soft)">${c.icon}${c.name.split(' ')[0]}</span>`).join(' '):'';
+  document.getElementById('nt-cards').innerHTML=activeCards.length?`<span style="color:var(--text-lo)">Cards: </span>`+activeCards.map(c=>`<span style="color:var(--gold-soft)">${ico(c.icon)}${c.name.split(' ')[0]}</span>`).join(' '):'';
 }
 
 // ═══════════════════════════════════════════
@@ -3311,7 +3469,7 @@ function beginInvDrag(el,item,clientX,clientY){
   dragState.active=true;dragState.el=el;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=false;dragState.fromNode=null;
   if(item)item.classList.add('dragging');
   dragGhost.style.display='flex';
-  document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[el].icon;
+  document.getElementById('drag-ghost-icon').innerHTML=ico(NODE_DEFS[el].icon);
   document.getElementById('drag-ghost-name').textContent=NODE_DEFS[el].name;
   moveDragGhost(clientX,clientY);
 }
@@ -3339,7 +3497,7 @@ function setupDragDrop(){
     if(node.immovable||!NODE_DEFS[node.el])return;
     e.preventDefault();dragState.active=true;dragState.el=node.el;dragState.snapQ=null;dragState.snapR=null;dragState.fromBoard=true;dragState.fromNode=node;
     R.placedNodes=R.placedNodes.filter(n=>n!==node);dragGhost.style.display='flex';
-    document.getElementById('drag-ghost-icon').textContent=NODE_DEFS[node.el].icon;document.getElementById('drag-ghost-name').textContent=NODE_DEFS[node.el].name;
+    document.getElementById('drag-ghost-icon').innerHTML=ico(NODE_DEFS[node.el].icon);document.getElementById('drag-ghost-name').textContent=NODE_DEFS[node.el].name;
     moveDragGhost(e.clientX,e.clientY);drawBoard();
   });
   boardCanvas.addEventListener('dblclick',e=>{
@@ -3425,7 +3583,7 @@ function showNodeTip(el,x,y){
   const tip=document.getElementById('nu-tip');if(!tip)return;
   const def=NODE_DEFS[el];if(!def)return;
   const lv=(META.nodeLevels&&META.nodeLevels[el])||1;
-  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:15px;color:${def.color};margin-bottom:3px;">${def.icon} ${def.name}${lv>1?` · Lv ${lv}`:''}</div><div style="font-size:16px;color:var(--text-dim);">${cn(NODE_ARCHETYPE[el]||'')}</div>`;
+  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:15px;color:${def.color};margin-bottom:3px;">${ico(def.icon)} ${def.name}${lv>1?` · Lv ${lv}`:''}</div><div style="font-size:16px;color:var(--text-dim);">${cn(NODE_ARCHETYPE[el]||'')}</div>`;
   tip.classList.add('show');
   // Position to the LEFT of the cursor
   const tw=tip.offsetWidth||200;
@@ -3455,7 +3613,7 @@ function updInventoryUI(){
       else if(el==='vp'&&s.overloaded)stateHint=`<div style="font-size:13px;color:var(--danger);font-family:'Cinzel',serif;">COOLING</div>`;
       else if(el==='fe'&&s.burnout)stateHint=`<div style="font-size:13px;color:var(--danger);font-family:'Cinzel',serif;">BURNOUT</div>`;
     }
-    d.innerHTML=`<div class="inv-node-icon" style="text-shadow:0 0 8px ${def.colorMid};">${def.icon}</div><div class="inv-node-name" style="color:${def.colorMid};">${def.name}</div>${stateHint}`;
+    d.innerHTML=`<div class="inv-node-icon" style="text-shadow:0 0 8px ${def.colorMid};">${ico(def.icon)}</div><div class="inv-node-name" style="color:${def.colorMid};">${def.name}</div>${stateHint}`;
     d.addEventListener('mouseenter',e=>showNodeTip(el,e.clientX,e.clientY));
     d.addEventListener('mousemove',e=>showNodeTip(el,e.clientX,e.clientY));
     d.addEventListener('mouseleave',hideNodeTip);
@@ -4501,7 +4659,7 @@ const LESSON_DEFS={
         r.disturbances[id]=(r.disturbances[id]||0)+stacks;
         const def=DISTURBANCE_DEFS[id];
         const total=r.disturbances[id];
-        log(`Conjuration: ${def.icon} ${def.name} conjured${total>stacks?` (×${total})`:stacks>1?` (×${stacks})`:''}.`,'g');
+        log(`Conjuration: ${def.name} conjured${total>stacks?` (×${total})`:stacks>1?` (×${stacks})`:''}.`,'g');
       });
       r._lessState={target,generated:0,added,stacks};
       updDisturbanceUI();
@@ -4721,7 +4879,7 @@ function updLessonUI(){
       const pct=Math.round((ls.progress||0)*100);
       const progText=ls.def.progressText?ls.def.progressText(ls):`${pct}%`;
       return `<div class="less-contract">
-        <div class="less-contract-name">${ls.def.icon} ${ls.def.name}</div>
+        <div class="less-contract-name">${ico(ls.def.icon)} ${ls.def.name}</div>
         <div class="less-contract-obj">${cn(ls.def.desc)}</div>
         <div class="less-contract-bar-wrap"><div class="less-contract-bar" style="width:${pct}%"></div></div>
         <div class="less-contract-prog">${progText}</div>
@@ -4734,7 +4892,7 @@ function updLessonUI(){
     chipList.style.display=lessons.length?'flex':'none';
     chipList.innerHTML=lessons.map(ls=>{
       const pct=Math.round((ls.progress||0)*100);
-      return `<div class="less-chip" title="${ls.def.name} — ${pct}%"><span style="color:var(--gold);text-shadow:0 0 5px rgba(200,164,72,.6);">${ls.def.icon}</span><span class="less-prog" style="display:${pct>0?'block':'none'}">${pct}%</span></div>`;
+      return `<div class="less-chip" title="${ls.def.name} — ${pct}%"><span style="color:var(--gold);text-shadow:0 0 5px rgba(200,164,72,.6);">${ico(ls.def.icon)}</span><span class="less-prog" style="display:${pct>0?'block':'none'}">${pct}%</span></div>`;
     }).join('');
   }
   // Board tint
@@ -4914,7 +5072,7 @@ const GRAD_CHALLENGE_DEFS={
       Object.entries(r.disturbances||{}).forEach(([id,stacks])=>{
         if(stacks>0){
           const def=DISTURBANCE_DEFS[id];
-          setTimeout(()=>showDisturbanceBanner(`⚠ ${def.name} DOUBLED`,def.icon),500);
+          setTimeout(()=>flashDisturbanceBanner({...def,name:`${def.name} — DOUBLED`},stacks,false),500);
         }
       });
       log(`⚗ Graduation Challenge: Reckoning of Curses — all Disturbances doubled for 60s!`,'g');
@@ -5084,7 +5242,7 @@ function gradRewardCardHTML(r,i,{pickable=false,received=false,dim=false}={}){
   const cls=['grad-reward-card',faceUp?'revealed':'sealed',known&&!received?'known':'',received?'received':'',dim?'dim':'',pickable?'pickable':''].filter(Boolean).join(' ');
   const onclick=pickable?` onclick="pickGradReward(${i})"`:'';
   const body=faceUp
-    ?`<div style="font-size:23px;margin-bottom:5px;">${r.icon}</div>
+    ?`<div style="font-size:23px;margin-bottom:5px;">${ico(r.icon)}</div>
       <div style="font-family:Cinzel,serif;font-size:15px;color:var(--gold);letter-spacing:1px;margin-bottom:3px;">${r.name}</div>
       <div style="font-size:13px;color:var(--text-dim);line-height:1.4;">${cn(r.desc)}</div>
       ${received?`<div style="font-family:Cinzel,serif;font-size:15px;color:#50e08a;letter-spacing:3px;margin-top:8px;">✓ RECEIVED</div>`:known?`<div class="grad-known-tag">KNOWN</div>`:''}`
@@ -5225,7 +5383,7 @@ function rollDisturbance(forceId){
 }
 function flashDisturbanceBanner(def,stacks,stacked){
   const b=document.getElementById('disturbance-banner');if(!b)return;
-  b.innerHTML=`<div style="font-size:15px;letter-spacing:2px;color:var(--danger);font-family:'Cinzel',serif;">⚠ DISTURBANCE</div><div style="font-size:19px;color:#fff;font-family:'Cinzel',serif;margin-top:2px;">${def.icon} ${def.name}${stacked?` ×${stacks}`:''}</div><div style="font-size:16px;color:var(--text-dim);margin-top:3px;">${cn(def.desc)}</div>`;
+  b.innerHTML=`<div style="font-size:15px;letter-spacing:2px;color:var(--danger);font-family:'Cinzel',serif;">⚠ DISTURBANCE</div><div style="font-size:19px;color:#fff;font-family:'Cinzel',serif;margin-top:2px;">${ico(def.icon)} ${def.name}${stacked?` ×${stacks}`:''}</div><div style="font-size:16px;color:var(--text-dim);margin-top:3px;">${cn(def.desc)}</div>`;
   b.classList.add('show');
   clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),3400);
 }
@@ -5241,7 +5399,7 @@ function flashLessonBanner(def,auReward,grad,isNewMastery,masteredCount,totalLes
   const masteryLine=isNewMastery
     ? `<div style="font-size:15px;color:var(--gold-hi);font-family:'Cinzel',serif;margin-top:4px;letter-spacing:1px;">\u2605 New Mastery \u2014 ${masteredCount}/${totalLessons}</div>`
     : '';
-  b.innerHTML=`<div style="font-size:15px;letter-spacing:2px;color:var(--gold);font-family:'Cinzel',serif;">\u2726 LESSON COMPLETE</div><div style="font-size:19px;color:#fff;font-family:'Cinzel',serif;margin-top:2px;">${def.icon} ${def.name}</div><div style="font-size:16px;color:var(--text-dim);margin-top:3px;">+${auReward} AU \u00b7 Graduation ${Math.round(grad)}%</div>${masteryLine}`;
+  b.innerHTML=`<div style="font-size:15px;letter-spacing:2px;color:var(--gold);font-family:'Cinzel',serif;">\u2726 LESSON COMPLETE</div><div style="font-size:19px;color:#fff;font-family:'Cinzel',serif;margin-top:2px;">${ico(def.icon)} ${def.name}</div><div style="font-size:16px;color:var(--text-dim);margin-top:3px;">+${auReward} AU \u00b7 Graduation ${Math.round(grad)}%</div>${masteryLine}`;
   b.classList.add('show');
   clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),isNewMastery?4200:3400);
 }
@@ -5254,7 +5412,7 @@ function updDisturbanceUI(){
   wrap.innerHTML=active.map(([id,s])=>{
     const def=DISTURBANCE_DEFS[id];
     const elColor=def.el==='board'?'var(--gold)':(NODE_DEFS[def.el]?NODE_DEFS[def.el].colorMid:'#fff');
-    return `<div class="dist-chip" data-dist="${id}"><span style="color:${elColor};text-shadow:0 0 5px ${elColor};">${def.icon}</span>${s>1?`<span class="dist-x">×${s}</span>`:''}</div>`;
+    return `<div class="dist-chip" data-dist="${id}"><span style="color:${elColor};text-shadow:0 0 5px ${elColor};">${ico(def.icon)}</span>${s>1?`<span class="dist-x">×${s}</span>`:''}</div>`;
   }).join('');
   // Styled hover tooltips on disturbance chips
   wrap.querySelectorAll('.dist-chip').forEach(chip=>{
@@ -5277,7 +5435,7 @@ function updDisturbanceUI(){
         veil:`Node readouts: hidden`,
       };
       const sevLine=sevLines[id]||'';
-      tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:15px;color:var(--danger);margin-bottom:3px;">${def.icon} ${def.name}${stacks>1?` ×${stacks}`:''}</div><div style="font-size:16px;color:var(--text-dim);margin-bottom:4px;">${cn(def.desc)}</div>${sevLine?`<div style="font-size:16px;color:#e05050;border-top:1px solid rgba(224,80,80,0.25);padding-top:4px;margin-top:2px;">▸ ${sevLine}</div>`:''}`;
+      tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:15px;color:var(--danger);margin-bottom:3px;">${ico(def.icon)} ${def.name}${stacks>1?` ×${stacks}`:''}</div><div style="font-size:16px;color:var(--text-dim);margin-bottom:4px;">${cn(def.desc)}</div>${sevLine?`<div style="font-size:16px;color:#e05050;border-top:1px solid rgba(224,80,80,0.25);padding-top:4px;margin-top:2px;">▸ ${sevLine}</div>`:''}`;
       tip.classList.add('show');
       const tw=tip.offsetWidth||200;
       tip.style.left=`${e.clientX-tw-14}px`;tip.style.top=`${e.clientY-10}px`;
@@ -5753,7 +5911,7 @@ function endRun(died){
   const row=document.getElementById('res-card-row');
   // Show discovered cards as tags
   row.innerHTML=R.thisRunCards.length
-    ? R.thisRunCards.map(c=>`<div class="res-card-tag" style="border-color:var(--${c.el==='ar'?'ar':c.el}-dim);color:var(--${c.el==='ar'?'ar':c.el}-mid)">${c.icon} ${c.name}</div>`).join('')
+    ? R.thisRunCards.map(c=>`<div class="res-card-tag" style="border-color:var(--${c.el==='ar'?'ar':c.el}-dim);color:var(--${c.el==='ar'?'ar':c.el}-mid)">${ico(c.icon)} ${c.name}</div>`).join('')
     : '<span style="font-size:15px;color:var(--text-lo)">None this run.</span>';
 
   // Build keep-cards section for cards discovered this run that aren't already owned
@@ -6032,7 +6190,7 @@ function forgeCardHTML(el){
       if(missing.length){
         const names=missing.map(r=>NODE_DEFS[r]?.name||r).join(', ');
         return `<div class="forge-disc-card" style="border-left:2px solid ${def.color};opacity:0.5;">
-          <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:21px;color:${def.colorMid};">${def.icon}</span>
+          <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:21px;color:${def.colorMid};">${ico(def.icon)}</span>
           <span style="font-family:'Cinzel',serif;font-size:15px;color:${def.colorMid};">${def.name}</span></div>
           <div style="font-size:15px;color:#e05050;margin-top:4px;">Requires: ${names}</div></div>`;
       }
@@ -6045,9 +6203,9 @@ function forgeCardHTML(el){
   const onBoard={};(META.lastBoard||[]).forEach(n=>{onBoard[n.el]=(onBoard[n.el]||0)+1;});
   const slotsHTML=parents.map((parentEl,i)=>{
     const pDef=NODE_DEFS[parentEl],avail=(META.nodeOwned[parentEl]||0)-(onBoard[parentEl]||0),filled=slots[i];
-    if(filled)return `<div class="forge-slot filled" data-combined="${el}" data-slotidx="${i}" onclick="clearForgeSlot('${el}',${i})" title="Tap to remove" style="border-color:${pDef.colorMid};background:${pDef.color}22;"><div style="font-size:22px;">${pDef.icon}</div></div>`;
+    if(filled)return `<div class="forge-slot filled" data-combined="${el}" data-slotidx="${i}" onclick="clearForgeSlot('${el}',${i})" title="Tap to remove" style="border-color:${pDef.colorMid};background:${pDef.color}22;"><div style="font-size:22px;">${ico(pDef.icon)}</div></div>`;
     const canSlot=forgeSelectedChip===parentEl&&avail>0;
-    return `<div class="forge-slot ${canSlot?'ready':''}" data-combined="${el}" data-slotidx="${i}" onclick="assignForgeSlot('${el}',${i})" style="${canSlot?`box-shadow:0 0 8px ${pDef.colorMid};`:''}"><div style="font-size:19px;opacity:0.4;">${pDef.icon}</div><div style="font-size:13px;color:${avail>0?'var(--text-dim)':'#e05050'};">${avail>0?`×${avail}`:'none'}</div></div>`;
+    return `<div class="forge-slot ${canSlot?'ready':''}" data-combined="${el}" data-slotidx="${i}" onclick="assignForgeSlot('${el}',${i})" style="${canSlot?`box-shadow:0 0 8px ${pDef.colorMid};`:''}"><div style="font-size:19px;opacity:0.4;">${ico(pDef.icon)}</div><div style="font-size:13px;color:${avail>0?'var(--text-dim)':'#e05050'};">${avail>0?`×${avail}`:'none'}</div></div>`;
   }).join('<div style="align-self:center;color:var(--text-dim);font-size:16px;">+</div>');
   const allSlotsFilled=slots.every(s=>s!==null)&&slots.length===parents.length;
   const isReforge=owned>=1&&META.unlockedTransmutation;
@@ -6058,7 +6216,7 @@ function forgeCardHTML(el){
   const rk=nodeRank(el),refCnt=(META.reforgeCount&&META.reforgeCount[el])||0;
   return `<div class="forge-disc-card" style="border-left:2px solid ${def.color};">
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-      <span style="font-size:22px;color:${def.colorMid};">${def.icon}</span>
+      <span style="font-size:22px;color:${def.colorMid};">${ico(def.icon)}</span>
       <span style="font-family:'Cinzel',serif;font-size:15px;color:${def.colorMid};">${def.name}</span>
       <span style="margin-left:auto;font-size:15px;color:var(--gold);">Lv${lv} · Rank ${toRoman(rk)}</span>
     </div>
@@ -6084,7 +6242,7 @@ function renderForgeDiscoveryList(){
         :`Watch your run card offers for <b>Discover: ${def.name}</b> (${card?card.cost:120} Arcane) — buying it unlocks forging.`;
       return `<div class="forge-disc-card" style="border-left:2px solid ${def.color};">
         <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:19px;color:${def.colorMid};">${def.icon}</span>
+          <span style="font-size:19px;color:${def.colorMid};">${ico(def.icon)}</span>
           <span style="font-family:'Cinzel',serif;font-size:16px;color:${def.colorMid};letter-spacing:1px;">${def.name}</span>
           <span style="margin-left:auto;font-size:15px;color:var(--gold);">Discovered</span>
         </div>
@@ -6093,7 +6251,7 @@ function renderForgeDiscoveryList(){
     }
     return `<div class="forge-disc-card" style="opacity:0.85;">
       <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:19px;opacity:0.35;">${def.icon}</span>
+        <span style="font-size:19px;opacity:0.35;">${ico(def.icon)}</span>
         <span style="font-family:'Cinzel',serif;font-size:16px;color:var(--text-dim);letter-spacing:1px;">???</span>
         <span style="margin-left:auto;font-size:15px;color:var(--gold);">${pct}%</span>
       </div>
@@ -6140,7 +6298,7 @@ function renderForgeArcanumCenter(){
 
   const oppRows=ARCANE_ROW_ORDER.filter(k=>ARCANE_OPPOSITION[k]).map(k=>{
     const opp=ARCANE_OPPOSITION[k],sur=getArcaneOppositionSurcharge(k);
-    return `<div class="arcanum-stat-row"><span style="color:${ARCANE_ROW_DEFS[k].color};">${ARCANE_ROW_DEFS[k].name}</span><span>Lv${rows[k]||0}${sur?` <span style="color:#e05050;">+${sur} fuel (opposed by ${ARCANE_ROW_DEFS[opp].name})</span>`:''}</span></div>`;
+    return `<div class="arcanum-stat-row" style="gap:12px;"><span style="color:${ARCANE_ROW_DEFS[k].color};">${ARCANE_ROW_DEFS[k].name}</span><span style="text-align:right;">Lv${rows[k]||0}${sur?` <span style="color:#e05050;">+${sur} fuel · opposed by ${ARCANE_ROW_DEFS[opp].name}</span>`:''}</span></div>`;
   }).join('');
 
   const hist=META.arcane.lastRunStats;
@@ -6157,7 +6315,7 @@ function renderForgeArcanumCenter(){
 
   con.innerHTML=`<div class="hub-sec-title" style="text-align:center;margin-bottom:8px;">α Arcane</div>
     ${repurchaseHTML}
-    <div style="display:flex;justify-content:center;margin:12px 0;">
+    <div style="display:flex;justify-content:center;margin:36px 0 40px;">
       <div style="width:120px;height:120px;border:2px solid ${NODE_DEFS.ar.colorMid};transform:rotate(45deg);display:flex;align-items:center;justify-content:center;background:rgba(240,240,248,.06);box-shadow:0 0 24px rgba(240,240,248,.15);">
         <span style="transform:rotate(-45deg);font-size:48px;color:${NODE_DEFS.ar.colorMid};font-family:serif;">α</span>
       </div>
@@ -6189,7 +6347,7 @@ function renderForgeArcanumRows(){
       const spare=fuelEl==='combined'
         ? COMBINED_LIST.filter(e=>(META.unlockedCombined||[]).includes(e)&&spareNodeCount(e)>0).length
         : spareNodeCount(wantEl);
-      const icon=fuelEl==='combined'?'⚗':(NODE_DEFS[wantEl]?.icon||'?');
+      const icon=fuelEl==='combined'?'⚗':ico(NODE_DEFS[wantEl]?.icon||'?');
       const canSlot=forgeSelectedChip&&isValidArcaneFuel(rowKey,forgeSelectedChip)&&spareNodeCount(forgeSelectedChip)>0;
       const slotsHTML=Array.from({length:needed},(_,i)=>i<have
         ? `<div class="forge-slot filled" title="Fuel deposited" style="width:44px;height:48px;border-color:${def.color};background:${def.color}22;"><div style="font-size:19px;">${icon}</div></div>`
@@ -6389,7 +6547,7 @@ function updHubUI(){
       const cost=cardCapCost(c);
       const blocked=!isEq&&(eq.length>=META.cardSlots||capUsed+cost>META.cardCap);
       const cls=`hub-card ${elc[c.el]||''} ${isEq?'equipped':'equippable'} ${blocked?'cant-equip':''}`;
-      return `<div class="${cls}" onclick="toggleEquip('${c.id}')"><div class="hc-cap">⬡ ${cost}</div><div class="hc-name">${c.icon} ${c.name}${isEq?'<span class="hc-eq-tag">✦ EQUIPPED</span>':''}</div><div class="hc-desc">${cn(c.desc)}</div></div>`;
+      return `<div class="${cls}" onclick="toggleEquip('${c.id}')"><div class="hc-cap">⬡ ${cost}</div><div class="hc-name">${ico(c.icon)} ${c.name}${isEq?'<span class="hc-eq-tag">✦ EQUIPPED</span>':''}</div><div class="hc-desc">${cn(c.desc)}</div></div>`;
     }).join(''):'<div class="empty-note">No cards match this filter.</div>';
   }
   // Render combined node upgrade cards if any are unlocked
@@ -6627,7 +6785,7 @@ function renderHubInventory(){
       chip.className='inv-node '+el;chip.dataset.el=el;
       chip.style.cssText=`width:40px;height:40px;cursor:grab;border-color:${def.color};box-shadow:0 0 6px ${def.color}44;background:linear-gradient(135deg, ${def.color}22, ${def.color}08);`;
       if(forgeSelectedChip===el)chip.classList.add('forge-selected');
-      chip.innerHTML=`<div class="inv-node-icon" style="font-size:22px;text-shadow:0 0 6px ${def.colorMid};">${def.icon}</div>`;
+      chip.innerHTML=`<div class="inv-node-icon" style="font-size:22px;text-shadow:0 0 6px ${def.colorMid};">${ico(def.icon)}</div>`;
       chip.addEventListener('click',()=>selectForgeChip(el));
       chip.addEventListener('mouseenter',e=>showNodeTip(el,e.clientX,e.clientY));
       chip.addEventListener('mousemove',e=>showNodeTip(el,e.clientX,e.clientY));
@@ -6664,7 +6822,7 @@ function setupHubBoardSystem(){
       e.preventDefault();
       hubDragState={active:true,node,snapQ:null,snapR:null,fromInv:null,fromBoard:true};
       META.lastBoard=META.lastBoard.filter(n=>n!==node);
-      hubDragGhost.innerHTML=NODE_DEFS[node.el].icon;
+      hubDragGhost.innerHTML=ico(NODE_DEFS[node.el].icon);
       hubDragGhost.style.display='flex';
       moveHubGhost(e.clientX,e.clientY);
       renderHubInventory();drawHubBoard();
@@ -6692,7 +6850,7 @@ function setupHubBoardSystem(){
       const el=chip.dataset.el;if(!el)return;
       e.preventDefault();
       hubDragState={active:true,node:{el},snapQ:null,snapR:null,fromInv:el,fromBoard:false};
-      hubDragGhost.innerHTML=NODE_DEFS[el].icon;
+      hubDragGhost.innerHTML=ico(NODE_DEFS[el].icon);
       hubDragGhost.style.display='flex';
       moveHubGhost(e.clientX,e.clientY);
     });
@@ -6863,7 +7021,7 @@ function setupHubBoardSystem(){
         const node=hubTouch.node;
         hubDragState={active:true,node,snapQ:null,snapR:null,fromInv:null,fromBoard:true};
         META.lastBoard=META.lastBoard.filter(n=>n!==node);
-        hubDragGhost.innerHTML=NODE_DEFS[node.el].icon;
+        hubDragGhost.innerHTML=ico(NODE_DEFS[node.el].icon);
         hubDragGhost.style.display='flex';
         moveHubGhost(t.clientX,t.clientY);
         renderHubInventory();drawHubBoard();
@@ -6908,7 +7066,7 @@ function setupHubBoardSystem(){
         e.preventDefault();
         invTouch.dragging=true;
         hubDragState={active:true,node:{el:invTouch.el},snapQ:null,snapR:null,fromInv:invTouch.el,fromBoard:false};
-        hubDragGhost.innerHTML=NODE_DEFS[invTouch.el].icon;
+        hubDragGhost.innerHTML=ico(NODE_DEFS[invTouch.el].icon);
         hubDragGhost.style.display='flex';
         moveHubGhost(t.clientX,t.clientY);
       }
@@ -6997,7 +7155,8 @@ function drawHubBoard(){
     ctx.beginPath();ctx.moveTo(x,y-hh);ctx.lineTo(x+hw,y);ctx.lineTo(x,y+hh);ctx.lineTo(x-hw,y);
     ctx.closePath();ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=def.colorMid;ctx.lineWidth=1.2;ctx.stroke();
     ctx.font=`${Math.round(cellZ*0.30)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=def.colorMid;ctx.shadowBlur=12;ctx.fillText(def.icon,x,y-cellZ*0.04);ctx.shadowBlur=0;
+    ctx.shadowColor=def.colorMid;ctx.shadowBlur=12;drawGlyph(ctx,def.icon,x,y-cellZ*0.07,cellZ*0.29,def.colorMid);ctx.shadowBlur=0;
+    ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle=def.colorMid;fillNodeName(ctx,def.name,x,y+cellZ*0.14,hw,hh,cellZ*0.14,cellZ*0.10);
     const hl=META.nodeLevels[n.el]||1;
     if(hl>1){ctx.font=`${Math.round(cellZ*0.14)}px Cinzel,serif`;ctx.fillStyle='rgba(220,190,110,.85)';ctx.fillText(toRoman(hl),x,y+cellZ*0.26);}
@@ -7065,7 +7224,7 @@ function setupRunCardTooltips(){
 function updCardList(){
   if(!META.unlockedCards.length)return;
   const elc={ig:'ci-ig',tr:'ci-tr',vt:'ci-vt',aq:'ci-aq',ar:'ci-ar'};
-  document.getElementById('clist').innerHTML=META.unlockedCards.map(c=>`<div class="crd ${elc[c.el]||''}"><div class="c-nm">${c.icon} ${c.name}</div><div class="c-ds">${cn(c.desc)}</div></div>`).join('');
+  document.getElementById('clist').innerHTML=META.unlockedCards.map(c=>`<div class="crd ${elc[c.el]||''}"><div class="c-nm">${ico(c.icon)} ${c.name}</div><div class="c-ds">${cn(c.desc)}</div></div>`).join('');
   setTimeout(setupRunCardTooltips,50);
 }
 
@@ -7496,7 +7655,7 @@ function renderGlossary(){
     html+=`<div style="font-family:'Cinzel',serif;font-size:13px;letter-spacing:1px;color:var(--gold-soft);margin:10px 4px 4px;text-transform:uppercase;">${cat}</div>`;
     entries.forEach(e=>{
       const sel=_glossarySel===e.id;
-      html+=`<div class="glo-item ${sel?'sel':''}" onclick="selectGlossary('${e.id}')"><span class="glo-sym">${e.icon}</span>${e.title}</div>`;
+      html+=`<div class="glo-item ${sel?'sel':''}" onclick="selectGlossary('${e.id}')"><span class="glo-sym">${ico(e.icon)}</span>${e.title}</div>`;
     });
   });
   const totalUnlocked=GLOSSARY.filter(e=>gloUnlocked(e.unlock)).length;
@@ -7515,7 +7674,7 @@ function renderGlossaryDetail(){
   const e=GLOSSARY.find(x=>x.id===_glossarySel);
   if(!e){detEl.innerHTML='<div class="empty-note">Select an entry to read about it.</div>';return;}
   detEl.innerHTML=`
-    <div style="font-family:'Cinzel',serif;font-size:25px;color:var(--gold);margin-bottom:2px;"><span class="glo-sym">${e.icon}</span>${e.title}</div>
+    <div style="font-family:'Cinzel',serif;font-size:25px;color:var(--gold);margin-bottom:2px;"><span class="glo-sym">${ico(e.icon)}</span>${e.title}</div>
     <div style="font-size:13px;letter-spacing:1px;color:var(--text-lo);text-transform:uppercase;margin-bottom:14px;font-family:'Cinzel',serif;">${e.cat}</div>
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px;">${e.svg}</div>
     <div style="font-size:16px;line-height:1.6;color:var(--text);max-width:520px;">${cn(e.body)}</div>`;
@@ -7547,7 +7706,7 @@ function renderKeepCards(cards){
     div.id=`kc-${c.id}`;
     div.innerHTML=`
       <div class="kc-info">
-        <div class="kc-name">${c.icon} ${c.name}</div>
+        <div class="kc-name">${ico(c.icon)} ${c.name}</div>
         <div class="kc-desc">${cn(c.desc)}</div>
       </div>
       <div class="kc-btn ${canAfford?'':'cant'}" onclick="buyCard('${c.id}')">Own — ${cost} AU</div>`;
@@ -7580,7 +7739,7 @@ function buyCard(cardId){
   // Remove from keep list
   const el=document.getElementById(`kc-${cardId}`);
   if(el){
-    el.innerHTML=`<div class="kc-info"><div class="kc-name">${c.icon} ${c.name}</div><div class="kc-desc">${cn(c.desc)}</div></div><div class="kc-owned">✓ Owned</div>`;
+    el.innerHTML=`<div class="kc-info"><div class="kc-name">${ico(c.icon)} ${c.name}</div><div class="kc-desc">${cn(c.desc)}</div></div><div class="kc-owned">✓ Owned</div>`;
   }
   // Update AU balance display
   const bal=document.getElementById('kc-au-balance');
@@ -7618,7 +7777,7 @@ function renderHubDiscoveredCards(){
     const div=document.createElement('div');
     div.className=`keep-card ${elc[c.el]||''}`;
     div.id=`hdc-${c.id}`;
-    div.innerHTML=`<div class="kc-info"><div class="kc-name">${c.icon} ${c.name}</div><div class="kc-desc">${cn(c.desc)}</div></div><div class="kc-btn ${can?'':'cant'}" onclick="hubBuyCard('${c.id}')">Own — ${cost} AU</div>`;
+    div.innerHTML=`<div class="kc-info"><div class="kc-name">${ico(c.icon)} ${c.name}</div><div class="kc-desc">${cn(c.desc)}</div></div><div class="kc-btn ${can?'':'cant'}" onclick="hubBuyCard('${c.id}')">Own — ${cost} AU</div>`;
     con.appendChild(div);
   });
 }
@@ -7649,7 +7808,7 @@ function renderLessonMastery(){
     const d=LESSON_DEFS[id];
     const m=done.has(id);
     return `<div class="lesson-chip${m?' mastered':''}" title="${d.name}${m?' — Mastered':' — Not yet completed'}">
-      <div class="lesson-chip-icon">${d.icon}</div>
+      <div class="lesson-chip-icon">${ico(d.icon)}</div>
       <div class="lesson-chip-name">${d.name}</div>
     </div>`;
   }).join('');
@@ -7996,7 +8155,7 @@ function openDebugModal(){
   const lg=document.getElementById('debug-lessons');
   lg.innerHTML=Object.keys(LESSON_DEFS).map(id=>{
     const d=LESSON_DEFS[id];
-    return `<div class="debug-pick" onclick="debugForceLesson('${id}')">${d.icon||''} ${d.name}</div>`;
+    return `<div class="debug-pick" onclick="debugForceLesson('${id}')">${ico(d.icon||'')} ${d.name}</div>`;
   }).join('');
   // Graduations
   const gg=document.getElementById('debug-grads');
@@ -8008,7 +8167,7 @@ function openDebugModal(){
   const dg=document.getElementById('debug-disturbances');
   dg.innerHTML=DISTURBANCE_IDS.map(id=>{
     const d=DISTURBANCE_DEFS[id];
-    return `<div class="debug-pick" onclick="debugForceDisturbance('${id}')">${d.icon||''} ${d.name}</div>`;
+    return `<div class="debug-pick" onclick="debugForceDisturbance('${id}')">${ico(d.icon||'')} ${d.name}</div>`;
   }).join('');
   document.getElementById('debug-ov').classList.add('show');
 }
@@ -8327,7 +8486,7 @@ function showCardsInner(openInvAfter){
     d.className=`ovc ${elc[c.el]||''} ${can?'':'no'}`;
     const costLabel=isShop?'Free · Opens Shop':isTmp?'Free · Instant':can?`${c.cost} Arcane`:`Need ${c.cost-Math.round(R.arc)} more`;
     const tendMark=(['ig','tr','vt','aq'].includes(c.el)&&((wNow[c.el]||0)>=0.30||c.el===domEl))?`<div class="ovc-tend">⚖ Drawn by your ${cn(NODE_DEFS[c.el].name)} tendency</div>`:'';
-    d.innerHTML=`<div class="ovc-ic">${c.icon}</div><div class="ovc-nm">${c.name}</div><div class="ovc-ds">${cn(c.desc)}</div>${tendMark}<div class="ovc-co">${costLabel}</div>`;
+    d.innerHTML=`<div class="ovc-ic">${ico(c.icon)}</div><div class="ovc-nm">${c.name}</div><div class="ovc-ds">${cn(c.desc)}</div>${tendMark}<div class="ovc-co">${costLabel}</div>`;
     if(can)d.onclick=()=>pickCard(c,openInvAfter);con.appendChild(d);
   });
   document.getElementById('card-ov').classList.add('show');
@@ -8454,7 +8613,7 @@ function renderShopInventoryStrip(){
     chip.className='inv-node '+el;
     chip.dataset.el=el;chip.dataset.fromInventory=fromInventory?'true':'false';
     chip.style.cssText=`width:40px;height:40px;cursor:grab;border-color:${def.color};box-shadow:0 0 6px ${def.color}44;background:linear-gradient(135deg, ${def.color}22, ${def.color}08);`;
-    chip.innerHTML=`<div class="inv-node-icon" style="font-size:22px;text-shadow:0 0 6px ${def.colorMid};">${def.icon}</div><div style="font-size:13px;color:${def.color};font-family:'Cinzel',serif;text-align:center;">${label}</div>`;
+    chip.innerHTML=`<div class="inv-node-icon" style="font-size:22px;text-shadow:0 0 6px ${def.colorMid};">${ico(def.icon)}</div><div style="font-size:13px;color:${def.color};font-family:'Cinzel',serif;text-align:center;">${label}</div>`;
     con.appendChild(chip);
   });
 }
@@ -8476,7 +8635,7 @@ function renderShopBuy(){
     const cost=nodeBuyCost(el);
     const canAfford=META.au>=cost;
     const div=document.createElement('div');div.className='shop-row';
-    div.innerHTML=`<div class="shop-row-info"><div class="shop-row-name">${def.icon} ${def.name}</div><div class="shop-row-sub">Own: ${owned} · Cost: ${cost} AU</div></div><div class="shop-row-btn buy ${canAfford?'':'cant'}" onclick="shopBuyNode('${el}')">Buy</div>`;
+    div.innerHTML=`<div class="shop-row-info"><div class="shop-row-name">${ico(def.icon)} ${def.name}</div><div class="shop-row-sub">Own: ${owned} · Cost: ${cost} AU</div></div><div class="shop-row-btn buy ${canAfford?'':'cant'}" onclick="shopBuyNode('${el}')">Buy</div>`;
     con.appendChild(div);
   });
 }
@@ -8495,7 +8654,7 @@ function setupShopFurnace(){
   function startChipDrag(el,fromInventory,x,y){
     shopDrag={active:true,el,fromInventory};
     if(!shopGhost){shopGhost=document.createElement('div');shopGhost.style.cssText='position:fixed;pointer-events:none;z-index:1001;display:flex;width:44px;height:44px;background:var(--bg2);border:1px solid var(--gold);border-radius:4px;align-items:center;justify-content:center;font-size:23px;';document.body.appendChild(shopGhost);}
-    shopGhost.textContent=NODE_DEFS[el].icon;shopGhost.style.display='flex';
+    shopGhost.innerHTML=ico(NODE_DEFS[el].icon);shopGhost.style.display='flex';
     shopGhost.style.left=`${x-22}px`;shopGhost.style.top=`${y-22}px`;
   }
   const overFurnace=(x,y)=>{const fr=furnace.getBoundingClientRect();return x>=fr.left&&x<=fr.right&&y>=fr.top&&y<=fr.bottom;};
