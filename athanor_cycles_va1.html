@@ -376,6 +376,12 @@ body{
 .arc-ov-val{display:inline-block;min-width:4.5ch;font-variant-numeric:tabular-nums;text-align:right;}
 .arc-ov-lbl{font-size:13px;color:var(--gold-dim);}
 .arc-pb{height:7px;background:rgba(0,0,0,.7);border:1px solid rgba(136,72,184,.25);border-radius:4px;overflow:visible;margin-top:5px;position:relative;transition:border-color .25s,box-shadow .25s;}
+@keyframes arcHit{0%{transform:translateX(0);box-shadow:0 0 0 rgba(224,80,80,0);}18%{transform:translateX(-3px);box-shadow:0 0 16px rgba(224,80,80,.85);}38%{transform:translateX(3px);}58%{transform:translateX(-2px);}100%{transform:translateX(0);box-shadow:0 0 0 rgba(224,80,80,0);}}
+.arc-pb.hit{animation:arcHit .4s ease-out;}
+@keyframes ovIn{from{opacity:0;transform:translateY(12px) scale(.96);}to{opacity:1;transform:none;}}
+.ov.show .ov-box{animation:ovIn .3s cubic-bezier(.2,.9,.3,1.15);}
+#lesson-ov.show>*{animation:ovIn .3s cubic-bezier(.2,.9,.3,1.15);}
+@media (prefers-reduced-motion:reduce){.arc-pb.hit,.ov.show .ov-box,#lesson-ov.show>*{animation:none;}}
 .arc-pb.has-ov{border-color:rgba(200,164,72,.55);box-shadow:0 0 8px rgba(200,164,72,.22);}
 .arc-pf{height:100%;background:linear-gradient(90deg,var(--ar-dim),var(--ar));border-radius:4px;transition:width .18s;}
 .arc-pf.has-ov{border-radius:4px 0 0 4px;}
@@ -1411,6 +1417,10 @@ body{
           <input type="checkbox" id="screen-shake-toggle" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setScreenShake(this.checked)">
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Visual Effects</div>
+          <input type="checkbox" id="effects-toggle" checked style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setEffects(this.checked)">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="font-family:'Cinzel',serif;font-size:15px;color:var(--text-dim);letter-spacing:1px;">Fullscreen</div>
           <input type="checkbox" id="fullscreen-toggle" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer;" onchange="setFullscreen(this.checked)">
         </div>
@@ -1500,6 +1510,15 @@ const ICON_PATHS={
   '🜍':{d:[_circ(50,50,36),'M24 42 q6.5 -9 13 0 t13 0 t13 0 t13 0','M24 60 q6.5 -9 13 0 t13 0 t13 0 t13 0']}, // Aestus — tide
   '🜔':{d:['M50 41 L50 17','M58 55 L79 71','M42 55 L21 71',_circ(50,50,9)],f:[_circ(50,11,5.5),_circ(84,75,5.5),_circ(16,75,5.5)]}, // Juncus — junction
   '🜐':{d:['M50 10 L85 30 L85 70 L50 90 L15 70 L15 30 Z','M15 58 L85 58','M32 73 L68 73']}, // Ceptus — reservoir
+  // Lesson schools
+  '🜲':{d:['M50 8 L50 30','M50 70 L50 92','M8 50 L30 50','M70 50 L92 50','M20 20 L36 36','M64 64 L80 80','M80 20 L64 36','M36 64 L20 80'],f:[_circ(50,50,8)]}, // Evocation — burst
+  '🜞':{d:['M50 10 L84 22 V50 C84 72 68 84 50 92 C32 84 16 72 16 50 V22 Z']},                    // Abjuration — shield
+  '🜛':{d:['M22 44 A30 30 0 0 1 76 34','M64 24 L78 34 L64 42','M78 56 A30 30 0 0 1 24 66','M36 76 L22 66 L36 58']}, // Transmutation — exchange
+  '🜡':{d:[_circ(50,50,38),'M50 12 L83 69 L17 69 Z']},                                           // Conjuration — summoning circle
+  '👁':{d:['M8 50 Q50 12 92 50 Q50 88 8 50 Z',_circ(50,50,13)],f:[_circ(50,50,5)]},               // Divination — the seeing eye
+  '🝰':{d:['M64 12 A38 38 0 1 0 64 88 A30 30 0 1 1 64 12 Z']},                                   // Illusion — crescent
+  '🜏':{d:['M26 48 A24 24 0 1 1 74 48 V64 H62 V76 H38 V64 H26 Z','M46 76 V67','M54 76 V67'],f:[_circ(40,47,5.5),_circ(60,47,5.5)]}, // Necromancy — skull
+  '🜚':{d:['M50 44 a6 6 0 1 1 -6 6 a14 14 0 1 1 14 -14 a22 22 0 1 1 -22 22 a30 30 0 1 1 30 -30']}, // Enchantment — charm spiral
   // Board-wide / Arcane sigil (board disturbances, Arcane cards)
   '🜀':{d:[_circ(50,50,26),'M50 6 L50 20','M50 80 L50 94','M6 50 L20 50','M80 50 L94 50'],f:[_circ(50,50,6)]},
 };
@@ -1972,10 +1991,10 @@ function spreadHeat(n,amt){
     s.heat=Math.min(thresh,(s.heat||0)+amt); // pre-heats Ignis (toward Conflagration / overload); overload triggers on its own click
   } else if(n.el==='vp'){
     s.heat=Math.min(75,(s.heat||0)+amt);
-    if(s.heat>=75){s.overloaded=true;s.cool=7.0*(1+disturbanceSev('interference'))+(bulwarkAnima()?0.5:0);log('Vapor overloaded!','w');}
+    if(s.heat>=75){s.overloaded=true;s.cool=7.0*(1+disturbanceSev('interference'))+(bulwarkAnima()?0.5:0);log('Vapor overloaded!','w');fxOverload(n);}
   } else if(n.el==='fe'){
     s.heat=(s.heat||0)+amt;
-    if(s.heat>=60){s.heat=60;s.burnout=true;s.boost=1.0;s.cool=7.0+(bulwarkAnima()?0.5:0);log('Ferrum overheated — cooling down!','w');}
+    if(s.heat>=60){s.heat=60;s.burnout=true;s.boost=1.0;s.cool=7.0+(bulwarkAnima()?0.5:0);log('Ferrum overheated — cooling down!','w');fxOverload(n);}
   }
 }
 
@@ -2608,6 +2627,89 @@ function renderChannelLinks(ctx,links){
     });
   });
 }
+// ═══════════════════════════════════════════
+// BOARD EFFECTS — particles, rings and shockwaves drawn on the board canvas. Cosmetic only; never touch
+// game state. Positions are stored in zoom-independent board units so they follow pan and zoom.
+// Turned off by Settings → Visual Effects.
+// ═══════════════════════════════════════════
+const FX={parts:[],rings:[],last:0};
+function fxOn(){return SETTINGS.effects!==false&&!!R&&!!boardCtx;}
+function fxWorld(node){return{wx:(node.q-node.r)*CELL*0.6,wy:(node.q+node.r)*CELL*0.4};}
+// Sparks thrown from a node (count scales with how much Arcane the action made)
+function fxBurst(node,color,count,power=1){
+  if(!fxOn()||!node)return;
+  const{wx,wy}=fxWorld(node),n=Math.min(30,Math.max(3,Math.round(count)));
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2,sp=(16+Math.random()*48)*power;
+    FX.parts.push({wx:wx+(Math.random()-.5)*16,wy:wy+(Math.random()-.5)*9,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.6-26*power,
+      life:0,max:0.4+Math.random()*0.55,color,size:0.9+Math.random()*1.6});
+  }
+  if(FX.parts.length>450)FX.parts.splice(0,FX.parts.length-450);
+}
+// Expanding ring: a diamond hugging a node, or (no node) an ellipse on the board plane from the centre
+function fxRing(node,color,{dur=0.5,speed=CELL*1.1,r0=CELL*0.5,width=2}={}){
+  if(!fxOn())return;
+  const p=node?fxWorld(node):{wx:0,wy:0};
+  FX.rings.push({wx:p.wx,wy:p.wy,r:r0,vr:speed,life:0,max:dur,color,width,diamond:!!node});
+  if(FX.rings.length>60)FX.rings.shift();
+}
+function fxCrit(node,color){fxRing(node,color||'#ffffff',{dur:0.45,speed:CELL*1.4,width:2.5});fxBurst(node,color||'#ffffff',14,1.35);}
+function fxOverload(node){fxRing(node,'#9090b0',{dur:0.6,speed:CELL*0.7,width:1.5});fxBurst(node,'#8a8aa8',10,0.6);}
+function fxBig(node,color){fxRing(node,color,{dur:0.7,speed:CELL*2.2,width:3});fxRing(node,color,{dur:0.5,speed:CELL*1.2,width:1.5});fxBurst(node,color,30,1.8);}
+// A pulse landing: shockwave across the whole board, and shields flaring on mitigating nodes
+function fxPulse(frac){
+  if(!fxOn())return;
+  const reach=CELL*(getBoardRange()*1.5+1.7);
+  const hurt=(frac||0)>0.001; // fully shielded / inverted pulses wash over in blue and leave the bar alone
+  FX.rings.push({wx:0,wy:0,r:CELL*0.15,vr:reach/0.65,life:0,max:0.65,color:hurt?'#e05070':'#70b8f0',width:2+Math.min(4,(frac||0)*12),diamond:false});
+  R.placedNodes.filter(n=>n.el==='aq'||n.el==='sl'||(n.el==='gl'&&n.state&&n.state.crystal)).forEach(n=>fxRing(n,'#58a8e8',{dur:0.5,speed:CELL*0.8,width:1.5}));
+  if(hurt)arcBarHit();
+}
+function fxCycle(){
+  if(!fxOn())return;
+  const reach=CELL*(getBoardRange()*1.5+1.7);
+  [0,0.18].forEach((d,i)=>FX.rings.push({wx:0,wy:0,r:CELL*0.2,vr:reach/0.9,life:-d,max:0.9,color:'#e0bc5a',width:i?1.5:3,diamond:false}));
+  R.placedNodes.forEach(n=>fxBurst(n,'#e0bc5a',5,0.8));
+}
+// Brief shake + red glow on the Arcane bar when damage lands
+function arcBarHit(){
+  if(SETTINGS.effects===false)return;
+  document.querySelectorAll('.arc-pb').forEach(pb=>{pb.classList.remove('hit');void pb.offsetWidth;pb.classList.add('hit');});
+}
+// A quick "pop" on the node the player just pressed
+function nodePopScale(n){
+  if(!n._tapT||SETTINGS.effects===false)return 1;
+  const k=(Date.now()-n._tapT)/150;
+  return k>=1?1:1+0.07*Math.sin(k*Math.PI);
+}
+function drawFx(ctx){
+  const now=Date.now(),dt=Math.min(0.05,Math.max(0,(now-(FX.last||now))/1000));FX.last=now;
+  if(!FX.parts.length&&!FX.rings.length)return;
+  const ox=boardCX+view.x,oy=boardCY+view.y,z=view.zoom;
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  FX.rings=FX.rings.filter(r=>{
+    r.life+=dt;if(r.life<0)return true;if(r.life>=r.max)return false;
+    r.r+=r.vr*dt;
+    const k=r.life/r.max,x=ox+r.wx*z,y=oy+r.wy*z,rr=r.r*z;
+    ctx.globalAlpha=(1-k)*0.75;ctx.strokeStyle=r.color;ctx.lineWidth=r.width*z*(1-k*0.5);
+    ctx.shadowColor=r.color;ctx.shadowBlur=10;
+    ctx.beginPath();
+    if(r.diamond){ctx.moveTo(x,y-rr*0.69);ctx.lineTo(x+rr,y);ctx.lineTo(x,y+rr*0.69);ctx.lineTo(x-rr,y);ctx.closePath();}
+    else ctx.ellipse(x,y,rr,rr*2/3,0,0,Math.PI*2);
+    ctx.stroke();
+    return true;
+  });
+  ctx.shadowBlur=0;
+  FX.parts=FX.parts.filter(p=>{
+    p.life+=dt;if(p.life>=p.max)return false;
+    p.vx*=(1-1.8*dt);p.vy=p.vy*(1-1.8*dt)+34*dt;p.wx+=p.vx*dt;p.wy+=p.vy*dt;
+    const k=p.life/p.max;
+    ctx.globalAlpha=(1-k)*0.9;ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(ox+p.wx*z,oy+p.wy*z,p.size*z*(1-k*0.5),0,Math.PI*2);ctx.fill();
+    return true;
+  });
+  ctx.restore();
+}
 // ── Board backdrop ── a warm glow under the sigil, a faint alchemical circle laid on the board plane
 // (slowly turning tick ring + the athanor triangle), and a few drifting motes. Cosmetic only.
 function drawBoardBackdrop(ctx,w,h){
@@ -2686,9 +2788,13 @@ function drawBoard(){
       return;
     }
     const{x,y}=gridToPixel(n.q,n.r);
+    const pop=nodePopScale(n);
+    if(pop!==1){boardCtx.save();boardCtx.translate(x,y);boardCtx.scale(pop,pop);boardCtx.translate(-x,-y);}
     if(NODE_DEFS[n.el].combined)drawCombinedNodeDiamond(boardCtx,x,y,n.el,n);
     else drawNodeDiamond(boardCtx,x,y,n.el,n);
+    if(pop!==1)boardCtx.restore();
   });}
+  drawFx(boardCtx);
   // Enchantment — keep the traitor visibly marked for the whole lesson
   if(R&&R._traitorNode&&R.placedNodes.includes(R._traitorNode)){
     const tn=R._traitorNode,{x,y}=gridToPixel(tn.q,tn.r),cz=CELL*view.zoom;
@@ -3404,6 +3510,7 @@ function finalizeNodeGen(node,g){
   bumpNecroUse(node);
   g*=getNecroMult(node);
   addArc(g);
+  fxBurst(node,NODE_DEFS[node.el]?NODE_DEFS[node.el].colorMid:'#c8a448',4+g/Math.max(1,R.arcMax)*70);
   return g;
 }
 function getValidDropPositions(excludeNode){
@@ -3643,6 +3750,7 @@ function transmuteTarget(node){
 }
 function tapNode(node,remapped){
   if(!R||R.dead||R.selecting||R.paused||R.placing)return;
+  if(!remapped)node._tapT=Date.now();
   if(node.el==='ar'){flt(node,`α ${getObservedNodes(node).length} observed`,NODE_DEFS.ar.colorMid);return;}
   if(node.el==='mirror'){flt(node,'◈ Mirror','#c090f0');return;}
   // Terra null zone — block interaction
@@ -3683,7 +3791,7 @@ function tapNode(node,remapped){
     if(s.overloaded&&flags._eternalFlame){g*=0.4;}
     if(!s.overloaded){
       s.heat=Math.min(thresh,s.heat+(flags._bigThresh?9:13)*(1+0.05*adjStacks(node,'vt')));
-      if(s.heat>=thresh){s.overloaded=true;s.cool=(flags._fast?2.6:4.8)*(1+disturbanceSev('interference'))+(bulwarkAnima()?0.5:0);log(flags._eternalFlame?'Ignis smolders — 40% output while cooling.':'Ignis overloaded.','w');}
+      if(s.heat>=thresh){s.overloaded=true;s.cool=(flags._fast?2.6:4.8)*(1+disturbanceSev('interference'))+(bulwarkAnima()?0.5:0);log(flags._eternalFlame?'Ignis smolders — 40% output while cooling.':'Ignis overloaded.','w');fxOverload(node);}
     }
     // Forge Heat — increment click count if not overloaded
     if(flags._forgeHeat&&!s.overloaded)s._forgeHeatStacks=Math.min(10,(s._forgeHeatStacks||0)+1);
@@ -3712,7 +3820,7 @@ function tapNode(node,remapped){
     if(s.crit||inStorm){
       let m=lvm;if(flags._vortex){s.streak=(s.streak||0)+1;m*=Math.pow(1.3,Math.min(s.streak,4));}
       const tectonicCritAmp=(R.cardFlags.tr._tectonic&&R.placedNodes.some(n2=>n2.el==='tr'&&n2.state&&n2.state.stored>=(getNodeCap()-1)))?1.3:1.0;
-      g=finalizeNodeGen(node,55*m*amp*(1-0.05*adjStacks(node,'tr'))*tectonicCritAmp);flt(node,`⚡+${Math.round(g)}`,'#80d860');log(`Ventus crit! +${Math.round(g)}`,'g');
+      g=finalizeNodeGen(node,55*m*amp*(1-0.05*adjStacks(node,'tr'))*tectonicCritAmp);flt(node,`⚡+${Math.round(g)}`,'#80d860');fxCrit(node,'#b8ffa0');log(`Ventus crit! +${Math.round(g)}`,'g');
       if(flags._accelerate){const ac=adjStacks(node,'ig');if(ac>0){R._accelBoost=(R._accelBoost||0)+0.05*ac;R._accelT=1.0;flt(node,'Kindled!','#ffb060');}}
       if(R.stats)R.stats.vtCrits++;
       // Combined discovery: Ventus crit achievements
@@ -3768,6 +3876,7 @@ function tapNode(node,remapped){
 
 function tapCombinedNode(node,remapped){
   if(!R||R.dead||R.selecting||R.paused||R.placing)return;
+  if(!remapped)node._tapT=Date.now();
   if(triggerTraitor(node))return;
   if(!remapped){const t=transmuteTarget(node);if(t!==node)return NODE_DEFS[t.el]?.combined?tapCombinedNode(t,true):tapNode(t,true);}
   const el=node.el,s=node.state,amp=genAmp(node.el);
@@ -3782,7 +3891,7 @@ function tapCombinedNode(node,remapped){
     let wasCrit=false;
     if(s.crit){
       wasCrit=true;
-      g=finalizeNodeGen(node,70*lvm*amp*(bulwarkAnima()?1.05:1));flt(node,`⚡+${Math.round(g)}`,'#ff9060');
+      g=finalizeNodeGen(node,70*lvm*amp*(bulwarkAnima()?1.05:1));flt(node,`⚡+${Math.round(g)}`,'#ff9060');fxCrit(node,'#ffc090');
       R.placedNodes.filter(n=>n.el==='im'&&n.state).forEach(n=>{n.state.vt_hits=(n.state.vt_hits||0)+1;});
       s.crit=false;s.crit_t=0;
     } else {
@@ -3791,7 +3900,7 @@ function tapCombinedNode(node,remapped){
     // Off-crit clicks heat Vapor; crit clicks bypass its own heat (reward for timing).
     if(!wasCrit){
       s.heat=Math.min(thresh,(s.heat||0)+16);
-      if(s.heat>=thresh){s.overloaded=true;s.cool=7.0*(1+disturbanceSev('interference'))+(bulwarkAnima()?0.5:0);log('Vapor overloaded!','w');}
+      if(s.heat>=thresh){s.overloaded=true;s.cool=7.0*(1+disturbanceSev('interference'))+(bulwarkAnima()?0.5:0);log('Vapor overloaded!','w');fxOverload(node);}
     }
     // Steam-spread: every click (crit or not) floods adjacent heat-nodes with +7 heat.
     getAdjacentNodes(node).forEach(n=>{if(n.el==='ig'||n.el==='fe'||n.el==='vp')spreadHeat(n,7);});
@@ -3820,7 +3929,7 @@ function tapCombinedNode(node,remapped){
       const ferrumBoostTr=R.placedNodes.filter(n=>n.el==='fe'&&n.state&&!n.state.burnout).reduce((a,n)=>a*n.state.boost,1.0);
       g=finalizeNodeGen(node,s.stored*bon*amp*ferrumBoostTr);
       s.stored=0;
-      if(s.crit){s.crit=false;flt(node,`★×2 +${Math.round(g)}`,'#b8c050');log(`Cinis double harvest!`,'g');
+      if(s.crit){s.crit=false;flt(node,`★×2 +${Math.round(g)}`,'#b8c050');fxCrit(node,'#e8f070');log(`Cinis double harvest!`,'g');
         R.placedNodes.filter(n=>n.el==='im'&&n.state).forEach(n=>{n.state.tr_hits=(n.state.tr_hits||0)+1;});
       }
       else flt(node,`+${Math.round(g)}`,'#b8c050');
@@ -3835,7 +3944,7 @@ function tapCombinedNode(node,remapped){
       s.crystal=true;s.crystal_t=dur;s.crit=false;
       s.mit_bonus=0.08+lvm*0.02; // up to ~12% extra mit
       s.gen_bonus=4+lvm*2;       // passive gen during crystal
-      flt(node,'❄️ Crystallized!','#78d8f0');
+      flt(node,'❄️ Crystallized!','#78d8f0');fxCrit(node,'#bff0ff');
       log(`Glacii crystallized — ${dur.toFixed(1)}s buff`,'g');
     } else {
       // Click gen only works when adjacent to Aqua; each adjacent Aqua boosts yield
@@ -4195,7 +4304,7 @@ function step(dt){
       const burst=400*lvMult(lv_im)*genAmp('im')*(1+(s.ig_hits||0)*0.05)*(1+(s.tr_hits||0)*0.04)*(1+(s.vt_hits||0)*0.06);
       addArc(burst);R.cyc_gen+=burst;
       log(`Impetus burst! +${Math.round(burst)} Arcane`,'g');
-      flt(n,`💥+${Math.round(burst)}`,'#ff8040');
+      flt(n,`💥+${Math.round(burst)}`,'#ff8040');fxBig(n,'#ff8040');
       s.ig_hits=0;s.tr_hits=0;s.vt_hits=0;s.charge=0;
     }
   });
@@ -4233,7 +4342,7 @@ function step(dt){
       const burst=cap*0.8*lvMult(lv_ce)*rankMult('ce');
       addArc(burst);R.cyc_gen+=burst*0.5; // only half counts toward cycle target
       log(`Ceptus reserve released! +${Math.round(burst)} Arcane`,'g');
-      flt(n,`🌀+${Math.round(burst)}`,'#68d8a8');
+      flt(n,`🌀+${Math.round(burst)}`,'#68d8a8');fxBig(n,'#68d8a8');
       R._ceptusBoost=5.0;
       flt(n,'⚡ Passive Boost!','#68d8a8');
       s.reserve=0;
@@ -4289,7 +4398,7 @@ function calcSpikePulseDamage(r){
   mit=Math.max(-0.5,mit*(1-disturbanceSev('ebbing')));
   return {raw,dmg:raw*(1-mit),mit};
 }
-function fireSpikePulse(r,{tag='🜲',logPrefix='Spike',floatSuffix='spike'}={}){
+function fireSpikePulse(r,{tag='✸',logPrefix='Spike',floatSuffix='spike'}={}){
   let {dmg}=calcSpikePulseDamage(r);
   if(r.overflow>0){const sh=Math.min(r.overflow,dmg);r.overflow=Math.max(0,r.overflow-sh);dmg-=sh;if(sh>0)log(`Overflow shielded ${Math.round(sh)} (${floatSuffix})`,'g');}
   // Perfect Storm — spike closes open storm windows (same as a normal pulse)
@@ -4301,7 +4410,7 @@ function fireSpikePulse(r,{tag='🜲',logPrefix='Spike',floatSuffix='spike'}={})
   r.arc=Math.max(0,r.arc-dmg);updArcUI();
   if(r.stats)r.stats.pulseDmg=(r.stats.pulseDmg||0)+dmg;
   const f=document.getElementById('flash');if(f){f.classList.add('on');setTimeout(()=>f.classList.remove('on'),150);}
-  screenShake(dmg/Math.max(1,r.arcMax));
+  screenShake(dmg/Math.max(1,r.arcMax));fxPulse(dmg/Math.max(1,r.arcMax));
   flt('ar',`${tag} ${logPrefix} −${Math.round(dmg)}`,'#e05050');
   log(`${logPrefix}! −${Math.round(dmg)}`,'d');
   return dmg;
@@ -4501,7 +4610,7 @@ function firePulse(){
   R.arc=Math.max(0,R.arc-dmg);updArcUI();
   if(R.stats)R.stats.pulseDmg=(R.stats.pulseDmg||0)+dmg;
   const f=document.getElementById('flash');if(f){f.classList.add('on');setTimeout(()=>f.classList.remove('on'),150);}
-  screenShake(dmg/Math.max(1,R.arcMax));
+  screenShake(dmg/Math.max(1,R.arcMax));fxPulse(dmg/Math.max(1,R.arcMax));
   if(R.cardFlags.aq._sanctify){const sst=adjBoardStacks('aq','tr');if(sst>0){addArc(5*sst);R._sanctifyT=2.0;log(`Sanctify: +${5*sst} Arcane`,'g');}}
   log(`Pulse −${Math.round(dmg)} Arcane`,'d');
   const escInterval=R.cycle>=15?2:3;
@@ -4678,7 +4787,7 @@ const LESSON_DEFS={
     progressText(ls){const s=ls._lessState;return `${Math.round(s.generated)} / ${s.target} Arcane · ×${s.stacks||1} each`;}
   },
   divination:{
-    name:'Divination',school:'School of Divination',icon:'🜀',
+    name:'Divination',school:'School of Divination',icon:'👁',
     desc:'You can see the pulses coming. Each has a threshold — miss one and the lesson fails.',
     init(r){
       const count=4+Math.floor(Math.random()*3); // 4–6
@@ -5595,6 +5704,7 @@ function nextCycle(){
   R._ceptusBoost=0;
   R.placedNodes.filter(n=>n.el==='fe'&&n.state).forEach(n=>{n.state.burnout=false;n.state.heat=0;n.state.boost=1.0;n.state.cool=0;});
   resetLessonsOnCycle();
+  fxCycle();
   log(`Cycle ${R.cycle}. Target: ${R.cyc_target}`,'g');
   if(shouldRollDisturbance(R.cycle))rollDisturbance();
   if(shouldRollDisturbance(R.cycle+1)&&!shouldRollDisturbance(R.cycle))flashDisturbanceTelegraph();
@@ -5691,7 +5801,7 @@ function consume(t){
 // SETTINGS
 // ═══════════════════════════════════════════
 const SETTINGS_KEY='athanor_settings';
-const SETTINGS={tooltipOpacity:1.0,fltOpacity:1.0,tooltipsEnabled:true,runWhenUnfocused:false,screenShake:true};
+const SETTINGS={tooltipOpacity:1.0,fltOpacity:1.0,tooltipsEnabled:true,runWhenUnfocused:false,screenShake:true,effects:true};
 
 function toggleHubSettings(){
   const panel=document.getElementById('hub-settings');
@@ -5741,6 +5851,8 @@ function applySettings(){
   if(tts)tts.disabled=SETTINGS.tooltipsEnabled===false;
   const ruf=document.getElementById('run-unfocused-toggle');
   if(ruf)ruf.checked=!!SETTINGS.runWhenUnfocused;
+  const fxt=document.getElementById('effects-toggle');
+  if(fxt)fxt.checked=SETTINGS.effects!==false;
   const sst=document.getElementById('screen-shake-toggle');
   if(sst)sst.checked=!!SETTINGS.screenShake;
   syncFullscreenToggle();
@@ -5777,6 +5889,13 @@ function setRunWhenUnfocused(on){
   SETTINGS.runWhenUnfocused=!!on;
   const cb=document.getElementById('run-unfocused-toggle');
   if(cb)cb.checked=!!on;
+  saveSettings();
+}
+function setEffects(on){
+  SETTINGS.effects=!!on;
+  const cb=document.getElementById('effects-toggle');
+  if(cb)cb.checked=!!on;
+  if(!on){FX.parts.length=0;FX.rings.length=0;}
   saveSettings();
 }
 function setScreenShake(on){
@@ -7308,22 +7427,22 @@ function getDivinationPulseDmgEst(){
 function getActivePulseOverride(){
   if(!R)return null;
   if(R._gradActive&&R._gradState&&R._gradState.type==='ventus'&&R._gradState.pulsesFired<R._gradState.totalPulses)
-    return{mode:'spike',label:'🜲 CULMINATION SPIKE',t:R._gradState.pulseT,dmg:getSpikePulseDmgEst(),mult:1.5,spikeN:R._gradState.pulsesFired+1,spikeTotal:R._gradState.totalPulses};
+    return{mode:'spike',label:'CULMINATION SPIKE',t:R._gradState.pulseT,dmg:getSpikePulseDmgEst(),mult:1.5,spikeN:R._gradState.pulsesFired+1,spikeTotal:R._gradState.totalPulses};
   const div=R.activeLessons&&R.activeLessons.find(ls=>ls.id==='divination');
   if(div&&div._lessState&&!div._lessState.failed&&div._lessState.nextIdx<div._lessState.count)
-    return{mode:'divination',label:'🜀 DIVINATION PULSE',t:div._lessState.nextT,thresh:div._lessState.thresholds[div._lessState.nextIdx],dmg:getDivinationPulseDmgEst()};
+    return{mode:'divination',label:'DIVINATION PULSE',t:div._lessState.nextT,thresh:div._lessState.thresholds[div._lessState.nextIdx],dmg:getDivinationPulseDmgEst()};
   const evo=R.activeLessons&&R.activeLessons.find(ls=>ls.id==='evocation');
   if(evo&&evo._lessState&&evo._lessState.survived<evo._lessState.total)
-    return{mode:'spike',label:'🜲 EVOCATION SPIKE',t:evo._lessPulseT,dmg:getSpikePulseDmgEst(),mult:1.5};
+    return{mode:'spike',label:'EVOCATION SPIKE',t:evo._lessPulseT,dmg:getSpikePulseDmgEst(),mult:1.5};
   const abj=R.activeLessons&&R.activeLessons.find(ls=>ls.id==='abjuration');
   if(abj&&abj._lessState&&!abj._lessState.failed&&abj._lessState.elapsed<abj._lessState.duration){
     const drain=abj._lessDrainRate||R.arcMax*0.05*R.cycle;
-    return{mode:'drain',label:'🜞 ABJURATION DRAIN',t:Math.max(0,abj._lessState.duration-abj._lessState.elapsed),drain,floor:Math.round(R.arcMax*0.35)};
+    return{mode:'drain',label:'ABJURATION DRAIN',t:Math.max(0,abj._lessState.duration-abj._lessState.elapsed),drain,floor:Math.round(R.arcMax*0.35)};
   }
   if(R._gradActive&&R._gradState&&R._gradState.type==='aqua'){
     const gs=R._gradState;
     const effDrain=gs.drainRate*(1-(R._stackedMit||0)*0.5);
-    return{mode:'drain',label:'🜄 THE BLEED',t:Math.max(0,gs.duration-gs.elapsed),drain:effDrain};
+    return{mode:'drain',label:'THE BLEED',t:Math.max(0,gs.duration-gs.elapsed),drain:effDrain};
   }
   return null;
 }
@@ -7350,7 +7469,7 @@ function updDrainDisplay(){
     const normal=Math.round(getNormalPulseDmgEst());
     if(ov&&(ov.mode==='spike'||ov.mode==='divination')){
       const boosted=Math.round(ov.dmg);
-      const tag=ov.mode==='divination'?'🜀':'🜲';
+      const tag=ov.mode==='divination'?'◉':'✸';
       html=`<span class="dr-normal">−${normal}/p</span><span class="dr-evo" title="${ov.label}">${tag} −${boosted}/hit</span>`;
     }else{
       plain=`−${normal}/p`;
