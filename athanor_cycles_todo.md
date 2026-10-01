@@ -23,7 +23,7 @@
 
 The full launch checklist (build, page, upload & test) now lives in **`ITCHIO_PAGE.md` §7**, alongside the page text and upload settings.
 
-- [x] Demo **v0.1.b** built — browser zip + standalone Windows build (Electron); see `desktop/README.md`
+- [x] Demo **v0.1.c** built (drawn icons, board effects, synthesized sound) — browser zip + standalone Windows build (Electron); see `desktop/README.md`
 - [x] Fonts bundled (offline-safe)
 - [ ] Remaining items: see `ITCHIO_PAGE.md` §7
 

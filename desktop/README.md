@@ -22,7 +22,7 @@ If `desktop\node_modules\electron\dist\electron.exe` is missing afterwards, run 
 ## Making a new release
 
 1. **Bump the version** on the title screen in `athanor_cycles_va1.html` — the line
-   `<div class="t-ver">Demo v0.1.b</div>`. The build reads the version from here; nothing else needs changing.
+   `<div class="t-ver">Demo v0.1.c</div>`. The build reads the version from here; nothing else needs changing.
 2. In a terminal inside `desktop`:
    ```
    npm run release
